@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel Edlevator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="logo" aria-label="Beranda Edlevator">
+                <span>E</span>
+                Edlevator
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="admin.html" aria-current="page">Admin</a></li>
+            </ul>
+            <div class="nav-actions" id="nav-auth"></div>
+        </div>
+    </nav>
+
+    <main class="section">
+        <div class="container">
+            <header class="section-header">
+                <h1>Panel Admin</h1>
+                <p>Kelola pengguna dan pantau transaksi pendaftaran kursus.</p>
+            </header>
+
+            <div id="admin-message" class="admin-message">
+                <p>Memeriksa hak akses...</p>
+            </div>
+
+            <section id="admin-panel" class="admin-panel" hidden>
+                <div class="admin-filters">
+                    <div class="form-group">
+                        <label for="admin-filter-course">Filter Kursus</label>
+                        <select id="admin-filter-course">
+                            <option value="">Semua Kursus</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="admin-filter-status">Filter Status</label>
+                        <select id="admin-filter-status">
+                            <option value="">Semua Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="paid">Paid</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                </div>
+
+                <section class="admin-section">
+                    <h2>Data Pengguna</h2>
+                    <div class="table-responsive">
+                        <table id="admin-users">
+                            <thead>
+                                <tr>
+                                    <th>Nama</th>
+                                    <th>User ID</th>
+                                    <th>Role</th>
+                                    <th>Dibuat</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="4" class="empty-state">Memuat data pengguna...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="admin-section">
+                    <h2>Data Pendaftaran Kursus</h2>
+                    <div class="table-responsive">
+                        <table id="admin-enrollments">
+                            <thead>
+                                <tr>
+                                    <th>Nama Pengguna</th>
+                                    <th>Kursus</th>
+                                    <th>Status</th>
+                                    <th>Daftar Pada</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="5" class="empty-state">Memuat data pendaftaran...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p id="admin-empty-state" class="empty-state" hidden>Tidak ada pendaftaran yang sesuai dengan filter.</p>
+                </section>
+            </section>
+        </div>
+    </main>
+
+    <footer>
+        &copy; 2024 Edlevator. Semua hak dilindungi.
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" src="script.js"></script>
+</body>
+</html>

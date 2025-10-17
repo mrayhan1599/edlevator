@@ -1,0 +1,2 @@
+export const SUPABASE_URL = "GANTI_DENGAN_URL";
+export const SUPABASE_ANON_KEY = "GANTI_DENGAN_ANON_KEY";

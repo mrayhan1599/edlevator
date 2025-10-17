@@ -37,9 +37,7 @@ FOR UPDATE USING (auth.uid() = id);
 
 CREATE POLICY "admin select all profiles" ON profiles
 FOR SELECT USING (
-  EXISTS (
-    SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'admin'
-  )
+  auth.jwt() ->> 'role' = 'admin'
 );
 
 -- Kebijakan akses enrollments
@@ -51,16 +49,12 @@ FOR SELECT USING (auth.uid() = user_id);
 
 CREATE POLICY "admin select all enrollments" ON enrollments
 FOR SELECT USING (
-  EXISTS (
-    SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'admin'
-  )
+  auth.jwt() ->> 'role' = 'admin'
 );
 
 CREATE POLICY "admin update enrollments" ON enrollments
 FOR UPDATE USING (
-  EXISTS (
-    SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'admin'
-  )
+  auth.jwt() ->> 'role' = 'admin'
 );
 
 -- Data awal kursus

@@ -16,8 +16,9 @@
             <ul class="nav-links">
                 <li><a href="index.html">Home</a></li>
                 <li><a href="dashboard.html">Dashboard</a></li>
-                <li><a href="daftar.html">Daftar</a></li>
+                <li><a href="admin.html">Admin</a></li>
             </ul>
+            <div class="nav-actions" id="nav-auth"></div>
         </div>
     </nav>
 
@@ -26,7 +27,7 @@
             <section class="form-section" aria-labelledby="form-title">
                 <h1 id="form-title">Daftar Akun Edlevator</h1>
                 <p style="text-align:center; color: var(--text-light); margin-bottom: 1.5rem;">Mulai jelajahi ribuan kursus dan tingkatkan kemampuanmu.</p>
-                <form action="thankyou.html" method="get">
+                <form id="register-form">
                     <div class="form-group">
                         <label for="nama">Nama Lengkap</label>
                         <input type="text" id="nama" name="nama" placeholder="Masukkan nama lengkap" required>
@@ -36,22 +37,16 @@
                         <input type="email" id="email" name="email" placeholder="nama@email.com" required>
                     </div>
                     <div class="form-group">
-                        <label for="jurusan">Jurusan yang Dipilih</label>
-                        <select id="jurusan" name="jurusan" required>
-                            <option value="" disabled selected>Pilih jurusan</option>
-                            <option value="teknik informatika">Teknik Informatika</option>
-                            <option value="manajemen bisnis">Manajemen Bisnis</option>
-                            <option value="desain komunikasi visual">Desain Komunikasi Visual</option>
-                            <option value="psikologi">Psikologi</option>
-                            <option value="akuntansi">Akuntansi</option>
-                        </select>
+                        <label for="minat">Jurusan atau Minat (Opsional)</label>
+                        <input type="text" id="minat" name="minat" placeholder="Contoh: Desain Komunikasi Visual">
                     </div>
                     <div class="form-group">
                         <label for="password">Password</label>
-                        <input type="password" id="password" name="password" placeholder="Minimal 8 karakter" required>
+                        <input type="password" id="password" name="password" placeholder="Minimal 8 karakter" minlength="6" required>
                     </div>
-                    <button type="submit" class="btn">Daftar Sekarang</button>
+                    <button type="submit" class="btn" id="register-submit">Daftar Sekarang</button>
                 </form>
+                <p id="form-feedback" class="form-feedback" role="alert" aria-live="polite"></p>
             </section>
         </div>
     </main>
@@ -59,5 +54,49 @@
     <footer>
         &copy; 2024 Edlevator. Semua hak dilindungi.
     </footer>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" src="script.js"></script>
+    <script type="module">
+        import { signUp } from "./auth.js";
+
+        const form = document.getElementById("register-form");
+        const feedback = document.getElementById("form-feedback");
+        const submitButton = document.getElementById("register-submit");
+
+        const setFeedback = (message, type = "") => {
+            if (!feedback) return;
+            feedback.textContent = message;
+            feedback.className = `form-feedback ${type}`.trim();
+        };
+
+        form?.addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            const fullName = form.nama.value.trim();
+            const email = form.email.value.trim();
+            const password = form.password.value;
+
+            if (!fullName || !email || !password) {
+                setFeedback("Mohon lengkapi data wajib.", "error");
+                return;
+            }
+
+            try {
+                submitButton.disabled = true;
+                submitButton.textContent = "Mendaftarkan...";
+                setFeedback("", "");
+
+                await signUp(email, password, fullName);
+                window.location.href = "dashboard.html";
+            } catch (error) {
+                console.error(error);
+                const message = error?.message ?? "Pendaftaran gagal. Coba lagi.";
+                setFeedback(message, "error");
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = "Daftar Sekarang";
+            }
+        });
+    </script>
 </body>
 </html>

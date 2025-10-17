@@ -16,8 +16,9 @@
             <ul class="nav-links">
                 <li><a href="index.html">Home</a></li>
                 <li><a href="dashboard.html">Dashboard</a></li>
-                <li><a href="daftar.html">Daftar</a></li>
+                <li><a href="admin.html">Admin</a></li>
             </ul>
+            <div class="nav-actions" id="nav-auth"></div>
         </div>
     </nav>
 
@@ -34,7 +35,7 @@
         <section class="dashboard-content">
             <header>
                 <h1>Dashboard Belajar</h1>
-                <p>Kelola progres belajarmu, jelajahi kursus baru, dan pantau pencapaianmu bersama Edlevator.</p>
+                <p id="dashboard-message">Kelola progres belajarmu, jelajahi kursus baru, dan pantau pencapaianmu bersama Edlevator.</p>
             </header>
 
             <div class="stats-grid" aria-label="Statistik ringkas">
@@ -72,12 +73,20 @@
             <div class="course-grid" id="course-list" aria-live="polite">
                 <!-- Kartu kursus di-render melalui JavaScript -->
             </div>
+
+            <section class="dashboard-section" id="kursus-saya">
+                <h2>Kursus Saya</h2>
+                <div id="my-enrollments" class="course-grid" aria-live="polite">
+                    <!-- Pendaftaran kursus pengguna -->
+                </div>
+            </section>
         </section>
     </main>
 
     <footer>
         &copy; 2024 Edlevator. Semua hak dilindungi.
     </footer>
-    <script src="script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" src="script.js"></script>
 </body>
 </html>

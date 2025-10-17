@@ -10,6 +10,43 @@ CREATE TABLE profiles (
 -- Helper function to evaluate admin privileges without triggering recursive
 -- policy checks on the profiles table. SECURITY DEFINER allows this function
 -- to read from profiles without being subject to row level security policies.
+CREATE TABLE admin_users (
+  user_id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE
+);
+
+CREATE OR REPLACE FUNCTION public.sync_admin_user()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF TG_OP = 'INSERT' OR TG_OP = 'UPDATE' THEN
+    IF NEW.role = 'admin' THEN
+      INSERT INTO admin_users (user_id)
+      VALUES (NEW.id)
+      ON CONFLICT (user_id) DO NOTHING;
+    ELSE
+      DELETE FROM admin_users WHERE user_id = NEW.id;
+    END IF;
+    RETURN NEW;
+  ELSIF TG_OP = 'DELETE' THEN
+    DELETE FROM admin_users WHERE user_id = OLD.id;
+    RETURN OLD;
+  END IF;
+
+  RETURN NULL;
+END;
+$$;
+
+CREATE TRIGGER sync_admin_user_trigger
+AFTER INSERT OR UPDATE OR DELETE ON profiles
+FOR EACH ROW EXECUTE FUNCTION public.sync_admin_user();
+
+INSERT INTO admin_users (user_id)
+SELECT id FROM profiles WHERE role = 'admin'
+ON CONFLICT (user_id) DO NOTHING;
+
 CREATE OR REPLACE FUNCTION public.is_admin(user_id uuid)
 RETURNS boolean
 LANGUAGE sql
@@ -17,7 +54,7 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
   SELECT EXISTS (
-    SELECT 1 FROM profiles WHERE id = user_id AND role = 'admin'
+    SELECT 1 FROM admin_users WHERE user_id = $1
   );
 $$;
 

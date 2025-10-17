@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Edlevator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="logo" aria-label="Beranda Edlevator">
+                <span>E</span>
+                Edlevator
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="daftar.html">Daftar</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="dashboard">
+        <aside class="sidebar" aria-label="Menu dashboard">
+            <h2>Navigasi</h2>
+            <ul>
+                <li><a href="#profil">Profil</a></li>
+                <li><a href="#kursus-saya">Kursus Saya</a></li>
+                <li><a href="#sertifikat">Sertifikat</a></li>
+            </ul>
+        </aside>
+
+        <section class="dashboard-content">
+            <header>
+                <h1>Dashboard Belajar</h1>
+                <p>Kelola progres belajarmu, jelajahi kursus baru, dan pantau pencapaianmu bersama Edlevator.</p>
+            </header>
+
+            <div class="stats-grid" aria-label="Statistik ringkas">
+                <article class="stat-card">
+                    <h3>Total Kursus</h3>
+                    <p id="stat-total-course">0</p>
+                </article>
+                <article class="stat-card">
+                    <h3>Total Jam Belajar</h3>
+                    <p id="stat-total-hours">0</p>
+                </article>
+                <article class="stat-card">
+                    <h3>Rata-rata Rating</h3>
+                    <p id="stat-average-rating">0</p>
+                </article>
+            </div>
+
+            <div class="filters" aria-label="Filter pencarian kursus">
+                <input type="search" id="search-input" placeholder="Cari kursus, dosen, atau kata kunci" aria-label="Cari kursus">
+                <select id="category-filter" aria-label="Filter kategori">
+                    <option value="">Semua Jurusan</option>
+                    <option value="teknik informatika">Teknik Informatika</option>
+                    <option value="manajemen bisnis">Manajemen Bisnis</option>
+                    <option value="desain komunikasi visual">Desain Komunikasi Visual</option>
+                    <option value="psikologi">Psikologi</option>
+                </select>
+                <select id="level-filter" aria-label="Filter level kursus">
+                    <option value="">Semua Level</option>
+                    <option value="pemula">Pemula</option>
+                    <option value="menengah">Menengah</option>
+                    <option value="lanjutan">Lanjutan</option>
+                </select>
+            </div>
+
+            <div class="course-grid" id="course-list" aria-live="polite">
+                <!-- Kartu kursus di-render melalui JavaScript -->
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        &copy; 2024 Edlevator. Semua hak dilindungi.
+    </footer>
+    <script src="script.js"></script>
+</body>
+</html>

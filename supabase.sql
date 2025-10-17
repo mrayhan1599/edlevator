@@ -7,6 +7,22 @@ CREATE TABLE profiles (
   created_at timestamp DEFAULT now()
 );
 
+-- Helper function to evaluate admin privileges without triggering recursive
+-- policy checks on the profiles table. SECURITY DEFINER allows this function
+-- to read from profiles without being subject to row level security policies.
+CREATE OR REPLACE FUNCTION public.is_admin(user_id uuid)
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM profiles WHERE id = user_id AND role = 'admin'
+  );
+$$;
+
+GRANT EXECUTE ON FUNCTION public.is_admin(uuid) TO authenticated, anon, service_role;
+
 CREATE TABLE courses (
   id bigserial PRIMARY KEY,
   title text NOT NULL,
@@ -39,11 +55,7 @@ CREATE POLICY "insert own profile" ON profiles
 FOR INSERT WITH CHECK (auth.uid() = id);
 
 CREATE POLICY "admin select all profiles" ON profiles
-FOR SELECT USING (
-  EXISTS (
-    SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'admin'
-  )
-);
+FOR SELECT USING (public.is_admin(auth.uid()));
 
 -- Kebijakan akses enrollments
 CREATE POLICY "user insert enrollment" ON enrollments
@@ -53,18 +65,10 @@ CREATE POLICY "user select own enrollment" ON enrollments
 FOR SELECT USING (auth.uid() = user_id);
 
 CREATE POLICY "admin select all enrollments" ON enrollments
-FOR SELECT USING (
-  EXISTS (
-    SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'admin'
-  )
-);
+FOR SELECT USING (public.is_admin(auth.uid()));
 
 CREATE POLICY "admin update enrollments" ON enrollments
-FOR UPDATE USING (
-  EXISTS (
-    SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'admin'
-  )
-);
+FOR UPDATE USING (public.is_admin(auth.uid()));
 
 -- Data awal kursus
 INSERT INTO courses (title, category, level, hours, rating, instructor) VALUES

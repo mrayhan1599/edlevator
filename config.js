@@ -1,2 +1,2 @@
-export const SUPABASE_URL = "GANTI_DENGAN_URL";
-export const SUPABASE_ANON_KEY = "GANTI_DENGAN_ANON_KEY";
+export const SUPABASE_URL = "https://goisnnlbvymfqeoufvpp.supabase.co";
+export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvaXNubmxidnltZnFlb3VmdnBwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2OTY4NTEsImV4cCI6MjA3NjI3Mjg1MX0.oXU6E3hLo8wI6xNMgMDfEyxwFqxVDRdnjf1nfdfypA8";

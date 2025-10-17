@@ -35,6 +35,9 @@ FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "update own profile" ON profiles
 FOR UPDATE USING (auth.uid() = id);
 
+CREATE POLICY "insert own profile" ON profiles
+FOR INSERT WITH CHECK (auth.uid() = id);
+
 CREATE POLICY "admin select all profiles" ON profiles
 FOR SELECT USING (
   EXISTS (

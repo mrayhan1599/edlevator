@@ -55,11 +55,7 @@ export async function signUp(email, password, fullName) {
     throw error;
   }
 
-  const user = data?.user;
-
-  if (!user) {
-    throw new Error("Pendaftaran berhasil namun pengguna tidak ditemukan.");
-  }
+  const user = data?.user ?? data?.session?.user ?? null;
 
   const { data: sessionData, error: sessionError } = await client.auth.getSession();
 
@@ -69,7 +65,7 @@ export async function signUp(email, password, fullName) {
 
   const session = sessionData?.session ?? data.session ?? null;
 
-  if (session) {
+  if (session && user?.id) {
     try {
       await ensureProfileRecord({
         client,

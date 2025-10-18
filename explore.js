@@ -5,48 +5,45 @@ const PROGRAM_TRACKS = {
     programs: [
       {
         title: "Teknik & Teknologi",
-        illustration:
-          "https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=900&q=80",
         detailsUrl: "teknik-pertambangan.html",
-        highlights: [
-          "Belajar coding, robotika, dan sistem cerdas dengan studi kasus industri.",
-          "Project akhir berupa prototipe aplikasi atau perangkat IoT.",
-          "Prospek karier: Software Engineer, Data Scientist, Product Engineer."
-        ],
-        sampleCourses: [
-          "Dasar Pemrograman Python",
-          "Rekayasa Perangkat Lunak",
-          "Jaringan Komputer Modern"
+        infographic:
+          "https://img.icons8.com/external-flaticons-flat-flat-icons/128/external-engineering-industry-flaticons-flat-flat-icons.png",
+        summary:
+          "Belajar teknologi digital, pemrograman, dan rekayasa sistem yang siap pakai di industri.",
+        majors: [
+          "Teknik Informatika",
+          "Sistem Informasi",
+          "Teknik Industri",
+          "Teknik Elektro",
+          "Teknik Mesin"
         ]
       },
       {
         title: "Kedokteran & Kesehatan",
-        illustration:
-          "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=900&q=80",
-        highlights: [
-          "Materi anatomi, biokimia, dan praktik klinis virtual yang interaktif.",
-          "Sesi mentoring bersama dokter muda dan praktisi kesehatan.",
-          "Prospek karier: Dokter, Ahli Gizi, Peneliti Medis."
-        ],
-        sampleCourses: [
-          "Dasar Anatomi Manusia",
-          "Farmakologi Klinik",
-          "Manajemen Rumah Sakit Digital"
+        infographic:
+          "https://img.icons8.com/external-flaticons-flat-flat-icons/128/external-medical-professions-flaticons-flat-flat-icons-2.png",
+        summary:
+          "Pelajari dasar ilmu kesehatan, praktik klinis virtual, dan kesiapan profesi kedokteran.",
+        majors: [
+          "Pendidikan Dokter",
+          "Keperawatan",
+          "Farmasi",
+          "Gizi",
+          "Kesehatan Masyarakat"
         ]
       },
       {
         title: "Ilmu Hayati & Lingkungan",
-        illustration:
-          "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=900&q=80",
-        highlights: [
-          "Eksperimen biologi molekuler dan analisis data laboratorium.",
-          "Belajar konservasi lingkungan melalui studi kasus nyata.",
-          "Prospek karier: Ahli Bioteknologi, Peneliti Lingkungan, Konsultan Energi."
-        ],
-        sampleCourses: [
-          "Genetika Terapan",
-          "Ekologi dan Keberlanjutan",
-          "Teknologi Pangan"
+        infographic:
+          "https://img.icons8.com/external-flaticons-flat-flat-icons/128/external-natural-science-green-technology-flaticons-flat-flat-icons.png",
+        summary:
+          "Eksplorasi biologi, kimia, dan konservasi lingkungan dengan pendekatan ilmiah modern.",
+        majors: [
+          "Biologi",
+          "Kimia",
+          "Teknologi Pangan",
+          "Teknik Lingkungan",
+          "Agribisnis"
         ]
       }
     ]
@@ -57,155 +54,117 @@ const PROGRAM_TRACKS = {
     programs: [
       {
         title: "Manajemen & Bisnis",
-        illustration:
-          "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=900&q=80",
-        highlights: [
-          "Simulasi bisnis digital dan studi kasus startup lokal.",
-          "Mentoring kewirausahaan bersama founder dan C-Level.",
-          "Prospek karier: Business Analyst, Entrepreneur, Product Manager."
-        ],
-        sampleCourses: [
-          "Dasar Manajemen Bisnis",
-          "Keuangan untuk Startup",
-          "Strategi Pemasaran Digital"
+        infographic:
+          "https://img.icons8.com/external-flaticons-flat-flat-icons/128/external-business-business-management-flaticons-flat-flat-icons.png",
+        summary:
+          "Pendalaman manajemen, kewirausahaan, dan strategi bisnis modern.",
+        majors: [
+          "Manajemen",
+          "Akuntansi",
+          "Bisnis Digital",
+          "Kewirausahaan",
+          "Administrasi Bisnis"
         ]
       },
       {
         title: "Komunikasi & Media",
-        illustration:
-          "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=900&q=80",
-        highlights: [
-          "Belajar storytelling, produksi konten, dan analisis audiens.",
-          "Workshop langsung dengan praktisi media dan public relations.",
-          "Prospek karier: Content Strategist, Jurnalis, PR Specialist."
-        ],
-        sampleCourses: [
-          "Dasar Komunikasi Massa",
-          "Brand Storytelling",
-          "Strategi Media Sosial"
+        infographic:
+          "https://img.icons8.com/external-flaticons-flat-flat-icons/128/external-communication-communication-flaticons-flat-flat-icons.png",
+        summary:
+          "Kembangkan kemampuan storytelling, produksi konten, dan strategi komunikasi massa.",
+        majors: [
+          "Ilmu Komunikasi",
+          "Hubungan Masyarakat",
+          "Broadcasting",
+          "Periklanan",
+          "Jurnalistik"
         ]
       },
       {
         title: "Hukum & Ilmu Politik",
-        illustration:
-          "https://images.unsplash.com/photo-1528747045269-390fe33c19d4?auto=format&fit=crop&w=900&q=80",
-        highlights: [
-          "Simulasi sidang dan analisis kebijakan publik terkini.",
-          "Bimbingan riset dari akademisi hukum dan politisi muda.",
-          "Prospek karier: Lawyer, Policy Analyst, Diplomat."
-        ],
-        sampleCourses: [
-          "Pengantar Ilmu Hukum",
-          "Hukum Bisnis Modern",
-          "Analisis Kebijakan Publik"
+        infographic:
+          "https://img.icons8.com/external-flaticons-flat-flat-icons/128/external-law-justice-flaticons-flat-flat-icons.png",
+        summary:
+          "Dalami hukum, kebijakan publik, dan dinamika politik kontemporer.",
+        majors: [
+          "Ilmu Hukum",
+          "Ilmu Politik",
+          "Hubungan Internasional",
+          "Kriminologi",
+          "Administrasi Publik"
         ]
       }
     ]
   }
 };
 
-function createProgramCard(program) {
+function collapseProgramCards(container) {
+  if (!container) {
+    return;
+  }
+
+  container.querySelectorAll(".program-card").forEach((card) => {
+    const trigger = card.querySelector(".program-card__trigger");
+    const details = card.querySelector(".program-card__details");
+    if (trigger && details) {
+      trigger.setAttribute("aria-expanded", "false");
+      details.hidden = true;
+    }
+    card.classList.remove("is-expanded");
+  });
+}
+
+function createProgramCard(program, container) {
   const card = document.createElement("article");
   card.className = "program-card";
-  if (program.detailsUrl) {
-    card.classList.add("program-card--has-link");
-    card.tabIndex = 0;
-    card.addEventListener("click", (event) => {
-      if (event.target.closest("a")) {
-        return;
-      }
-      window.location.href = program.detailsUrl;
-    });
-    card.addEventListener("keydown", (event) => {
-      if ((event.key === "Enter" || event.key === " ") && event.target === card) {
-        event.preventDefault();
-        window.location.href = program.detailsUrl;
-      }
-    });
-  }
-  const subTracksMarkup = (program.subTracks ?? [])
-    .map((subTrack) => {
-      const semestersMarkup = (subTrack.semesters ?? [])
-        .map((semester, index) => {
-          const coursesMarkup = (semester.courses ?? [])
-            .map((course) => `<li>${course}</li>`)
-            .join("");
-          const coursesSection = coursesMarkup
-            ? `
-          <div class="semester-section">
-            <h6>Daftar Mata Kuliah</h6>
-            <ul class="semester-courses">${coursesMarkup}</ul>
-          </div>`
-            : "";
-          const videoSection = semester.video
-            ? `
-          <div class="semester-section semester-video">
-            <h6>${semester.video.title}</h6>
-            <div class="responsive-video">
-              <iframe src="${semester.video.url}" title="${semester.video.title}" loading="lazy" allowfullscreen></iframe>
-            </div>
-          </div>`
-            : "";
-          const overviewText = semester.overview
-            ? `<span class="semester-overview">${semester.overview}</span>`
-            : "";
-          return `
-        <details class="semester-item"${index === 0 ? " open" : ""}>
-          <summary>
-            <span class="semester-label">${semester.label}</span>
-            ${overviewText}
-          </summary>
-          ${coursesSection}
-          ${videoSection}
-        </details>`;
-        })
-        .join("");
 
-      const descriptionText = subTrack.description
-        ? `<p class="subtrack-description">${subTrack.description}</p>`
-        : "";
-
-      return `
-      <div class="subtrack">
-        <h4>${subTrack.name}</h4>
-        ${descriptionText}
-        <div class="semester-list">
-          ${semestersMarkup}
-        </div>
-      </div>`;
-    })
+  const majorsMarkup = (program.majors ?? [])
+    .map((major) => `<li>${major}</li>`)
     .join("");
 
-  const actionButtons = [
-    program.detailsUrl
-      ? `<a href="${program.detailsUrl}" class="btn small">Jelajahi Teknik Pertambangan</a>`
-      : "",
-    `<a href="dashboard.html" class="btn secondary small">Lihat kelas terkait</a>`
-  ]
-    .filter(Boolean)
-    .join("");
+  const detailsLink = program.detailsUrl
+    ? `<a href="${program.detailsUrl}" class="btn tertiary small">Lihat detail program</a>`
+    : "";
 
   card.innerHTML = `
-    <figure class="program-illustration">
-      <img src="${program.illustration}" alt="Ilustrasi ${program.title}" loading="lazy">
-    </figure>
-    <div class="program-content">
-      <h3>${program.title}</h3>
-      <ul class="program-highlights">
-        ${program.highlights.map((item) => `<li>${item}</li>`).join("")}
-      </ul>
-      <div class="program-courses">
-        <span>Contoh mata kuliah:</span>
-        <div class="program-tags">
-          ${program.sampleCourses.map((course) => `<span class="chip">${course}</span>`).join("")}
-        </div>
+    <button type="button" class="program-card__trigger" aria-expanded="false">
+      <figure class="program-card__icon">
+        <img src="${program.infographic}" alt="Infografis ${program.title}" loading="lazy">
+      </figure>
+      <div class="program-card__header">
+        <h3>${program.title}</h3>
+        <p>${program.summary ?? ""}</p>
       </div>
-      ${subTracksMarkup ? `<div class="program-subtracks">${subTracksMarkup}</div>` : ""}
-      <div class="program-actions">
-        ${actionButtons}
+      <span class="program-card__chevron" aria-hidden="true"></span>
+    </button>
+    <div class="program-card__details" hidden>
+      <h4>Daftar jurusan populer</h4>
+      <ul class="program-card__list">
+        ${majorsMarkup}
+      </ul>
+      <div class="program-card__actions">
+        ${detailsLink}
+        <a href="dashboard.html" class="btn secondary small">Lihat kelas terkait</a>
       </div>
     </div>
   `;
+
+  const trigger = card.querySelector(".program-card__trigger");
+  const details = card.querySelector(".program-card__details");
+
+  if (trigger && details) {
+    trigger.addEventListener("click", () => {
+      const isExpanded = trigger.getAttribute("aria-expanded") === "true";
+      collapseProgramCards(container);
+
+      if (!isExpanded) {
+        trigger.setAttribute("aria-expanded", "true");
+        details.hidden = false;
+        card.classList.add("is-expanded");
+      }
+    });
+  }
+
   return card;
 }
 
@@ -224,7 +183,7 @@ function setActiveTrack(trackKey) {
 
   programsContainer.innerHTML = "";
   track.programs.forEach((program) => {
-    programsContainer.appendChild(createProgramCard(program));
+    programsContainer.appendChild(createProgramCard(program, programsContainer));
   });
 }
 

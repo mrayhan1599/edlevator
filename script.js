@@ -8,6 +8,11 @@ import {
 
 let navProfileCleanup = null;
 let navMainDropdownCleanup = null;
+let navMobileCleanup = null;
+let navToggleButton = null;
+let navLinksList = null;
+let navContainerEl = null;
+let closeMobileNavMenu = () => {};
 
 const SAMPLE_COURSES = [
   {
@@ -155,6 +160,7 @@ let cachedSession = null;
 let cachedProfile = null;
 let cachedProfileDetails = null;
 let cachedAvatarDataUrl = null;
+let profileDetailsSupported = true;
 let courseCache = [];
 let cachedEnrollments = [];
 let enrollmentsContainer = null;
@@ -221,6 +227,160 @@ function getUserInitials(name) {
       .slice(0, 2)
       .join("") || "E"
   );
+}
+
+function normalizeProfileValue(value) {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed === "" ? null : trimmed;
+  }
+  return value ?? null;
+}
+
+function metadataValue(metadata, key) {
+  if (!metadata) {
+    return null;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(metadata, key)) {
+    return metadata[key];
+  }
+
+  const camelKey = key.replace(/_([a-z])/g, (_, char) => char.toUpperCase());
+  if (Object.prototype.hasOwnProperty.call(metadata, camelKey)) {
+    return metadata[camelKey];
+  }
+
+  return null;
+}
+
+function buildProfileDetails({ detailsData = {}, metadata = {} } = {}) {
+  const pickString = (value) => {
+    if (typeof value === "string") {
+      return value;
+    }
+    if (value === null || value === undefined) {
+      return "";
+    }
+    return String(value);
+  };
+
+  const resolveField = (key) => {
+    if (
+      detailsData &&
+      Object.prototype.hasOwnProperty.call(detailsData, key) &&
+      detailsData[key] !== null &&
+      detailsData[key] !== undefined
+    ) {
+      return pickString(detailsData[key]);
+    }
+    return pickString(metadataValue(metadata, key));
+  };
+
+  const resolvedName = pickString(
+    detailsData?.full_name ??
+      metadataValue(metadata, "full_name") ??
+      cachedProfile?.full_name ??
+      metadata?.full_name ??
+      metadata?.fullName ??
+      cachedSession?.user?.user_metadata?.full_name ??
+      cachedSession?.user?.email ??
+      ""
+  ).trim();
+
+  const avatarSource =
+    detailsData?.avatar_data_url ??
+    metadataValue(metadata, "avatar_data_url") ??
+    null;
+
+  return {
+    fullName: resolvedName,
+    birthdate: resolveField("birthdate"),
+    gender: resolveField("gender"),
+    track: resolveField("track"),
+    major: resolveField("major"),
+    occupation: resolveField("occupation"),
+    company: resolveField("company"),
+    location: resolveField("location"),
+    bio: resolveField("bio"),
+    avatarDataUrl:
+      typeof avatarSource === "string" && avatarSource.trim() !== ""
+        ? avatarSource
+        : null,
+  };
+}
+
+function getCurrentProfileData() {
+  const metadata = cachedSession?.user?.user_metadata ?? {};
+  const details = cachedProfileDetails ?? {};
+
+  return {
+    fullName:
+      details.fullName ??
+      cachedProfile?.full_name ??
+      metadata.full_name ??
+      metadata.fullName ??
+      cachedSession?.user?.email ??
+      "",
+    birthdate: details.birthdate ?? metadata.birthdate ?? "",
+    gender: details.gender ?? metadata.gender ?? "",
+    track: details.track ?? metadata.track ?? "",
+    major: details.major ?? metadata.major ?? "",
+    occupation: details.occupation ?? metadata.occupation ?? "",
+    company: details.company ?? metadata.company ?? "",
+    location: details.location ?? metadata.location ?? "",
+    bio: details.bio ?? metadata.bio ?? "",
+  };
+}
+
+function isProfileDetailsUnsupportedError(error) {
+  if (!error) {
+    return false;
+  }
+
+  const code = error.code;
+  if (code === "42P01" || code === "42501") {
+    return true;
+  }
+
+  const message = (error.message ?? "").toString().toLowerCase();
+  return message.includes("profile_details");
+}
+
+async function persistProfileMetadata(data, avatarDataUrl = cachedAvatarDataUrl) {
+  if (!cachedSession?.user?.id || !supabaseClient) {
+    return;
+  }
+
+  const metadataPayload = {
+    full_name: normalizeProfileValue(data.fullName),
+    birthdate: normalizeProfileValue(data.birthdate),
+    gender: normalizeProfileValue(data.gender),
+    track: normalizeProfileValue(data.track),
+    major: normalizeProfileValue(data.major),
+    occupation: normalizeProfileValue(data.occupation),
+    company: normalizeProfileValue(data.company),
+    location: normalizeProfileValue(data.location),
+    bio: normalizeProfileValue(data.bio),
+    avatar_data_url: normalizeProfileValue(avatarDataUrl),
+  };
+
+  const { data: result, error } = await supabaseClient.auth.updateUser({
+    data: metadataPayload,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  if (result?.user) {
+    cachedSession = {
+      ...cachedSession,
+      user: result.user,
+    };
+  }
+
+  return metadataPayload;
 }
 
 function cleanupNavProfileMenu() {
@@ -336,12 +496,96 @@ function setupNavProfileMenu() {
   };
 }
 
+function cleanupMobileNavToggle() {
+  if (typeof navMobileCleanup === "function") {
+    navMobileCleanup();
+    navMobileCleanup = null;
+  }
+  closeMobileNavMenu = () => {};
+}
+
+function setupMobileNavToggle() {
+  cleanupMobileNavToggle();
+
+  if (!navToggleButton || !navLinksList || !navContainerEl) {
+    return;
+  }
+
+  const closeMenu = () => {
+    navContainerEl.removeAttribute("data-mobile-open");
+    navToggleButton.setAttribute("aria-expanded", "false");
+  };
+
+  const openMenu = () => {
+    navContainerEl.setAttribute("data-mobile-open", "true");
+    navToggleButton.setAttribute("aria-expanded", "true");
+  };
+
+  const toggleMenu = () => {
+    const isOpen = navContainerEl.getAttribute("data-mobile-open") === "true";
+    if (isOpen) {
+      closeMenu();
+    } else {
+      openMenu();
+    }
+  };
+
+  const handleKeydown = (event) => {
+    if (event.key === "Escape") {
+      closeMenu();
+      if (document.activeElement && !navContainerEl.contains(document.activeElement)) {
+        navToggleButton.focus();
+      }
+    }
+  };
+
+  const handleResize = () => {
+    if (window.innerWidth > 768) {
+      closeMenu();
+    }
+  };
+
+  const handleLinkClick = () => {
+    closeMenu();
+  };
+
+  const handleOutsideClick = (event) => {
+    if (!navContainerEl.contains(event.target)) {
+      closeMenu();
+    }
+  };
+
+  navToggleButton.addEventListener("click", toggleMenu);
+  window.addEventListener("keydown", handleKeydown);
+  window.addEventListener("resize", handleResize);
+  document.addEventListener("click", handleOutsideClick);
+
+  const menuLinks = Array.from(navLinksList.querySelectorAll("a"));
+  menuLinks.forEach((item) => {
+    item.addEventListener("click", handleLinkClick);
+  });
+
+  navMobileCleanup = () => {
+    navToggleButton.removeEventListener("click", toggleMenu);
+    window.removeEventListener("keydown", handleKeydown);
+    window.removeEventListener("resize", handleResize);
+    document.removeEventListener("click", handleOutsideClick);
+    menuLinks.forEach((item) => {
+      item.removeEventListener("click", handleLinkClick);
+    });
+  };
+
+  closeMobileNavMenu = closeMenu;
+  closeMenu();
+}
+
 function renderNavbar() {
   if (!navAuthEl) {
     return;
   }
 
   cleanupNavProfileMenu();
+  closeMobileNavMenu();
 
   if (!cachedSession) {
     navAuthEl.innerHTML = `
@@ -375,9 +619,11 @@ function renderNavbar() {
     if (cachedAvatarDataUrl) {
       avatarVisual.style.backgroundImage = `url("${cachedAvatarDataUrl}")`;
       avatarVisual.textContent = "";
+      avatarVisual.classList.add("has-image");
     } else {
       avatarVisual.style.backgroundImage = "";
       avatarVisual.textContent = initials;
+      avatarVisual.classList.remove("has-image");
     }
   }
 
@@ -782,6 +1028,7 @@ async function updateSession() {
     } else {
       cachedProfileDetails = null;
       cachedAvatarDataUrl = null;
+      profileDetailsSupported = true;
     }
   } catch (error) {
     console.error(error);
@@ -875,6 +1122,14 @@ async function loadProfileDetailsFromDatabase() {
   }
 
   try {
+    const metadata = cachedSession.user?.user_metadata ?? {};
+
+    if (!profileDetailsSupported) {
+      cachedProfileDetails = buildProfileDetails({ metadata });
+      cachedAvatarDataUrl = cachedProfileDetails.avatarDataUrl ?? null;
+      return;
+    }
+
     const { data, error } = await supabaseClient
       .from("profile_details")
       .select(
@@ -884,45 +1139,33 @@ async function loadProfileDetailsFromDatabase() {
       .maybeSingle();
 
     if (error && error.code !== "PGRST116") {
+      if (isProfileDetailsUnsupportedError(error)) {
+        profileDetailsSupported = false;
+        cachedProfileDetails = buildProfileDetails({ metadata });
+        cachedAvatarDataUrl = cachedProfileDetails.avatarDataUrl ?? null;
+        return;
+      }
       throw error;
     }
 
-    cachedAvatarDataUrl = data?.avatar_data_url ?? null;
-    cachedProfileDetails = {
-      fullName:
-        cachedProfile?.full_name ??
-        cachedSession.user?.user_metadata?.full_name ??
-        cachedSession.user?.email ??
-        "",
-      birthdate: data?.birthdate ?? "",
-      gender: data?.gender ?? "",
-      track: data?.track ?? "",
-      major: data?.major ?? "",
-      occupation: data?.occupation ?? "",
-      company: data?.company ?? "",
-      location: data?.location ?? "",
-      bio: data?.bio ?? "",
-      avatarDataUrl: cachedAvatarDataUrl,
-    };
+    cachedProfileDetails = buildProfileDetails({
+      detailsData: data ?? {},
+      metadata,
+    });
+    cachedAvatarDataUrl = cachedProfileDetails.avatarDataUrl ?? null;
   } catch (error) {
+    const metadata = cachedSession?.user?.user_metadata ?? {};
+    if (isProfileDetailsUnsupportedError(error)) {
+      profileDetailsSupported = false;
+      cachedProfileDetails = buildProfileDetails({ metadata });
+      cachedAvatarDataUrl = cachedProfileDetails.avatarDataUrl ?? null;
+      console.warn("Tabel profile_details tidak tersedia. Menggunakan metadata pengguna.");
+      return;
+    }
+
     console.error("Gagal memuat detail profil", error);
-    cachedProfileDetails = {
-      fullName:
-        cachedProfile?.full_name ??
-        cachedSession?.user?.user_metadata?.full_name ??
-        cachedSession?.user?.email ??
-        "",
-      birthdate: "",
-      gender: "",
-      track: "",
-      major: "",
-      occupation: "",
-      company: "",
-      location: "",
-      bio: "",
-      avatarDataUrl: null,
-    };
-    cachedAvatarDataUrl = null;
+    cachedProfileDetails = buildProfileDetails({ metadata });
+    cachedAvatarDataUrl = cachedProfileDetails.avatarDataUrl ?? null;
   }
 }
 
@@ -965,12 +1208,30 @@ async function saveProfileDetailsToDatabase(data) {
     throw profileError;
   }
 
-  const { error: detailsError } = await supabaseClient
-    .from("profile_details")
-    .upsert(detailsPayload, { onConflict: "user_id" });
+  let detailsSaved = false;
 
-  if (detailsError) {
-    throw detailsError;
+  if (profileDetailsSupported) {
+    const { error: detailsError } = await supabaseClient
+      .from("profile_details")
+      .upsert(detailsPayload, { onConflict: "user_id" });
+
+    if (detailsError) {
+      if (isProfileDetailsUnsupportedError(detailsError)) {
+        profileDetailsSupported = false;
+      } else {
+        throw detailsError;
+      }
+    } else {
+      detailsSaved = true;
+    }
+  }
+
+  if (!detailsSaved) {
+    await persistProfileMetadata(data, cachedAvatarDataUrl);
+  } else {
+    persistProfileMetadata(data, cachedAvatarDataUrl).catch((error) => {
+      console.warn("Gagal menyelaraskan metadata profil", error);
+    });
   }
 
   cachedProfile = cachedProfile
@@ -978,10 +1239,8 @@ async function saveProfileDetailsToDatabase(data) {
     : { id: userId, full_name: profilePayload.full_name };
   cachedProfileDetails = {
     ...data,
+    avatarDataUrl: cachedAvatarDataUrl ?? null,
   };
-  if (cachedAvatarDataUrl) {
-    cachedProfileDetails.avatarDataUrl = cachedAvatarDataUrl;
-  }
 }
 
 async function saveAvatarToDatabase(dataUrl) {
@@ -994,12 +1253,32 @@ async function saveAvatarToDatabase(dataUrl) {
     avatar_data_url: dataUrl || null,
   };
 
-  const { error } = await supabaseClient
-    .from("profile_details")
-    .upsert(payload, { onConflict: "user_id" });
+  let stored = false;
 
-  if (error) {
-    throw error;
+  if (profileDetailsSupported) {
+    const { error } = await supabaseClient
+      .from("profile_details")
+      .upsert(payload, { onConflict: "user_id" });
+
+    if (error) {
+      if (isProfileDetailsUnsupportedError(error)) {
+        profileDetailsSupported = false;
+      } else {
+        throw error;
+      }
+    } else {
+      stored = true;
+    }
+  }
+
+  const currentData = getCurrentProfileData();
+
+  if (!stored) {
+    await persistProfileMetadata(currentData, dataUrl || null);
+  } else {
+    persistProfileMetadata(currentData, dataUrl || null).catch((error) => {
+      console.warn("Gagal memperbarui metadata avatar", error);
+    });
   }
 
   cachedAvatarDataUrl = dataUrl || null;
@@ -1123,19 +1402,31 @@ function updateAvatarPreview() {
 
   if (!cachedSession) {
     avatarPreviewEl.style.backgroundImage = "";
-    avatarPreviewEl.textContent = "Inisial";
+    avatarPreviewEl.classList.remove("has-image");
+    avatarPreviewEl.textContent = "E";
+    avatarPreviewEl.setAttribute(
+      "aria-label",
+      "Pratinjau foto profil. Masuk untuk menambahkan foto."
+    );
     return;
   }
 
   const name = getUserDisplayName();
+  const initials = getUserInitials(name) || name?.[0]?.toUpperCase() || "E";
+
+  avatarPreviewEl.setAttribute(
+    "aria-label",
+    `Foto profil ${name || "pengguna"}`
+  );
 
   if (cachedAvatarDataUrl) {
     avatarPreviewEl.style.backgroundImage = `url("${cachedAvatarDataUrl}")`;
     avatarPreviewEl.textContent = "";
+    avatarPreviewEl.classList.add("has-image");
   } else {
     avatarPreviewEl.style.backgroundImage = "";
-    const initials = getUserInitials(name);
-    avatarPreviewEl.textContent = initials || "Inisial";
+    avatarPreviewEl.textContent = initials;
+    avatarPreviewEl.classList.remove("has-image");
   }
 }
 
@@ -1202,6 +1493,12 @@ function updateAvatarPreviewWithSelection() {
   if (selectedAvatarDataUrl) {
     avatarPreviewEl.style.backgroundImage = `url("${selectedAvatarDataUrl}")`;
     avatarPreviewEl.textContent = "";
+    avatarPreviewEl.classList.add("has-image");
+    const name = getUserDisplayName();
+    avatarPreviewEl.setAttribute(
+      "aria-label",
+      `Foto profil ${name || "pengguna"}`
+    );
   } else {
     updateAvatarPreview();
   }
@@ -1640,6 +1937,9 @@ function updateAdminPanel() {
 
 document.addEventListener("DOMContentLoaded", async () => {
   navAuthEl = document.getElementById("nav-auth");
+  navToggleButton = document.getElementById("nav-toggle");
+  navLinksList = document.getElementById("primary-navigation");
+  navContainerEl = document.querySelector(".navbar");
   enrollmentsContainer = document.getElementById("my-enrollments");
   dashboardMessage = document.getElementById("dashboard-message");
   dashboardCoursesList = document.getElementById("course-list");
@@ -1668,6 +1968,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   adminEmptyState = document.getElementById("admin-empty-state");
 
   setupMainNavDropdowns();
+  setupMobileNavToggle();
   initializeEventListeners();
   initializeProfileForms();
   await initializeCourseFilters();

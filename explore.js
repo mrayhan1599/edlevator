@@ -7,6 +7,7 @@ const PROGRAM_TRACKS = {
         title: "Teknik & Teknologi",
         illustration:
           "https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=900&q=80",
+        detailsUrl: "teknik-pertambangan.html",
         highlights: [
           "Belajar coding, robotika, dan sistem cerdas dengan studi kasus industri.",
           "Project akhir berupa prototipe aplikasi atau perangkat IoT.",
@@ -16,114 +17,6 @@ const PROGRAM_TRACKS = {
           "Dasar Pemrograman Python",
           "Rekayasa Perangkat Lunak",
           "Jaringan Komputer Modern"
-        ],
-        subTracks: [
-          {
-            name: "S1 Teknik Pertambangan",
-            description:
-              "Program sarjana yang mempelajari teknik ekstraksi sumber daya mineral secara aman, efisien, dan berkelanjutan.",
-            semesters: [
-              {
-                label: "Semester 1",
-                overview:
-                  "Fondasi sains dasar dan pengenalan industri pertambangan dengan fokus pada keselamatan kerja.",
-                courses: [
-                  "Pengantar Teknik Pertambangan",
-                  "Matematika Teknik I",
-                  "Fisika Dasar untuk Pertambangan",
-                  "Kimia Dasar",
-                  "Geologi Umum"
-                ],
-                video: {
-                  title: "Pengenalan Dunia Teknik Pertambangan",
-                  url: "https://www.youtube.com/embed/TYgXrbAiK5w"
-                }
-              },
-              {
-                label: "Semester 2",
-                overview:
-                  "Pendalaman geologi dan pemetaan dasar sebagai pijakan eksplorasi mineral.",
-                courses: [
-                  "Geologi Fisik",
-                  "Matematika Teknik II",
-                  "Statika dan Dinamika",
-                  "Pemetaan Geologi",
-                  "Praktikum Mineralogi"
-                ]
-              },
-              {
-                label: "Semester 3",
-                overview:
-                  "Teknik eksplorasi serta karakterisasi material tambang dan lingkungan.",
-                courses: [
-                  "Geofisika Tambang",
-                  "Mekanika Tanah",
-                  "Eksplorasi Sumber Daya Mineral",
-                  "Teknik Lingkungan Pertambangan",
-                  "Statistik Teknik"
-                ]
-              },
-              {
-                label: "Semester 4",
-                overview:
-                  "Perencanaan tambang terbuka, ventilasi, dan ekonomi tambang tingkat dasar.",
-                courses: [
-                  "Perencanaan Tambang Terbuka",
-                  "Ventilasi Tambang",
-                  "Ekonomi Pertambangan",
-                  "Hidrologi Tambang",
-                  "Praktikum Pemodelan Tambang"
-                ]
-              },
-              {
-                label: "Semester 5",
-                overview:
-                  "Optimalisasi operasi tambang dan pemrosesan mineral tingkat lanjut.",
-                courses: [
-                  "Operasi Penambangan",
-                  "Pengolahan Mineral",
-                  "Teknik Peledakan",
-                  "Keselamatan dan Kesehatan Kerja Tambang",
-                  "Manajemen Risiko Pertambangan"
-                ]
-              },
-              {
-                label: "Semester 6",
-                overview:
-                  "Automasi tambang, instrumentasi, serta manajemen kualitas produksi.",
-                courses: [
-                  "Instrumentasi Pertambangan",
-                  "Otomasi Sistem Tambang",
-                  "Pengendalian Mutu Produksi",
-                  "Hukum dan Etika Pertambangan",
-                  "Analisis Data Operasi"
-                ]
-              },
-              {
-                label: "Semester 7",
-                overview:
-                  "Rancang bangun tambang bawah tanah dan studi kelayakan proyek.",
-                courses: [
-                  "Perencanaan Tambang Bawah Tanah",
-                  "Evaluasi Proyek Tambang",
-                  "Simulasi Operasi Tambang",
-                  "Rehabilitasi Lahan Pascatambang",
-                  "Kewirausahaan Tambang"
-                ]
-              },
-              {
-                label: "Semester 8",
-                overview:
-                  "Praktik kerja lapangan, penelitian terapan, dan penyusunan tugas akhir.",
-                courses: [
-                  "Magang Industri Tambang",
-                  "Metodologi Penelitian",
-                  "Seminar Tugas Akhir",
-                  "Proyek Desain Tambang Terpadu"
-                ]
-              }
-            ]
-          }
         ]
       },
       {
@@ -214,6 +107,22 @@ const PROGRAM_TRACKS = {
 function createProgramCard(program) {
   const card = document.createElement("article");
   card.className = "program-card";
+  if (program.detailsUrl) {
+    card.classList.add("program-card--has-link");
+    card.tabIndex = 0;
+    card.addEventListener("click", (event) => {
+      if (event.target.closest("a")) {
+        return;
+      }
+      window.location.href = program.detailsUrl;
+    });
+    card.addEventListener("keydown", (event) => {
+      if ((event.key === "Enter" || event.key === " ") && event.target === card) {
+        event.preventDefault();
+        window.location.href = program.detailsUrl;
+      }
+    });
+  }
   const subTracksMarkup = (program.subTracks ?? [])
     .map((subTrack) => {
       const semestersMarkup = (subTrack.semesters ?? [])
@@ -267,6 +176,15 @@ function createProgramCard(program) {
     })
     .join("");
 
+  const actionButtons = [
+    program.detailsUrl
+      ? `<a href="${program.detailsUrl}" class="btn small">Jelajahi Teknik Pertambangan</a>`
+      : "",
+    `<a href="dashboard.html" class="btn secondary small">Lihat kelas terkait</a>`
+  ]
+    .filter(Boolean)
+    .join("");
+
   card.innerHTML = `
     <figure class="program-illustration">
       <img src="${program.illustration}" alt="Ilustrasi ${program.title}" loading="lazy">
@@ -284,7 +202,7 @@ function createProgramCard(program) {
       </div>
       ${subTracksMarkup ? `<div class="program-subtracks">${subTracksMarkup}</div>` : ""}
       <div class="program-actions">
-        <a href="dashboard.html" class="btn secondary small">Lihat kelas terkait</a>
+        ${actionButtons}
       </div>
     </div>
   `;

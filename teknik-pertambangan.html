@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teknik Pertambangan - Edlevator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="logo" aria-label="Beranda Edlevator">
+                <span>E</span>
+                Edlevator
+            </a>
+            <ul class="nav-links" id="primary-navigation">
+                <li><a href="index.html">Home</a></li>
+                <li class="nav-item nav-item-has-submenu">
+                    <button type="button" class="nav-link-toggle" aria-expanded="false">
+                        Dashboard
+                        <span class="nav-link-icon" aria-hidden="true">▾</span>
+                    </button>
+                    <ul class="nav-submenu" hidden>
+                        <li><a href="dashboard.html">Ringkasan</a></li>
+                        <li><a href="profile.html">Profil</a></li>
+                        <li><a href="courses.html">Kursus Saya</a></li>
+                        <li><a href="certificates.html">Sertifikat</a></li>
+                    </ul>
+                </li>
+                <li><a href="explore.html" aria-current="page">Explore</a></li>
+                <li><a href="admin.html">Admin</a></li>
+            </ul>
+            <div class="nav-end">
+                <button type="button" class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="primary-navigation">
+                    <span class="sr-only">Buka navigasi utama</span>
+                    <span class="nav-toggle-icon" aria-hidden="true"></span>
+                </button>
+                <div class="nav-actions" id="nav-auth"></div>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <header class="program-detail-hero">
+            <div class="container program-detail-hero__content">
+                <div class="program-detail-hero__badge">Teknik &amp; Teknologi</div>
+                <div class="program-detail-hero__heading">
+                    <div class="program-detail-icon" aria-hidden="true">
+                        <svg viewBox="0 0 64 64" role="img" focusable="false">
+                            <path d="M12 26h40l10 18-30 18L2 44l10-18z" fill="#f97316"></path>
+                            <path d="M52 26 32 8 12 26l20 12 20-12z" fill="#fb923c"></path>
+                            <path d="M24 38v14l8 4 8-4V38l-8 4-8-4z" fill="#fed7aa"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1>Teknik Pertambangan</h1>
+                        <p>
+                            Dalami proses eksplorasi hingga pengolahan sumber daya mineral dengan pendekatan teknologi
+                            mutakhir dan praktik industri nyata.
+                        </p>
+                    </div>
+                </div>
+                <ul class="program-detail-hero__highlights">
+                    <li>Fokus pada keselamatan dan keberlanjutan operasi tambang.</li>
+                    <li>Belajar dari studi kasus tambang terbuka dan bawah tanah.</li>
+                    <li>Integrasi perangkat lunak pemodelan tambang sejak awal studi.</li>
+                </ul>
+            </div>
+        </header>
+
+        <section class="program-detail-intro">
+            <div class="container program-detail-grid">
+                <article class="program-overview">
+                    <h2>Mengapa memilih Teknik Pertambangan?</h2>
+                    <p>
+                        Jurusan ini mempersiapkan kamu menjadi engineer yang mampu merancang, menjalankan, dan
+                        mengevaluasi kegiatan penambangan secara bertanggung jawab. Kurikulum dirancang untuk
+                        menyeimbangkan dasar ilmiah, kemampuan teknis, serta pemahaman lingkungan dan sosial.
+                    </p>
+                    <ul class="program-overview-list">
+                        <li>Pendampingan karier dari praktisi pertambangan nasional.</li>
+                        <li>Laboratorium virtual untuk simulasi eksplorasi dan perencanaan tambang.</li>
+                        <li>Proyek akhir berupa desain tambang terintegrasi.</li>
+                    </ul>
+                </article>
+                <aside class="program-video-card">
+                    <h2>Intip pengalaman belajarnya</h2>
+                    <div class="responsive-video responsive-video--player">
+                        <video controls preload="metadata" poster="https://images.unsplash.com/photo-1517638851339-4aa32003c11a?auto=format&fit=crop&w=900&q=80">
+                            <source src="https://storage.googleapis.com/coverr-main/mp4/Mt_Baker.mp4" type="video/mp4">
+                            Browser kamu tidak mendukung pemutar video bawaan.
+                        </video>
+                    </div>
+                    <p class="program-video-caption">
+                        Video pengantar kurikulum dibawakan oleh dosen dan mentor industri, lengkap dengan contoh sesi
+                        praktikum eksplorasi.
+                    </p>
+                </aside>
+            </div>
+        </section>
+
+        <section class="program-curriculum" aria-labelledby="curriculum-heading">
+            <div class="container">
+                <header class="program-curriculum__header">
+                    <h2 id="curriculum-heading">Struktur Kurikulum Semester 1-4</h2>
+                    <p>
+                        Jelajahi materi inti setiap semester melalui panel di bawah ini. Buka salah satu semester untuk
+                        melihat ringkasan mata kuliah beserta fokus pembelajarannya.
+                    </p>
+                </header>
+                <div class="semester-list program-semester-list">
+                    <details class="semester-item" open>
+                        <summary>
+                            <span class="semester-label">Semester 1</span>
+                            <span class="semester-overview">Fondasi sains dasar dan pengenalan industri pertambangan.</span>
+                        </summary>
+                        <div class="semester-section">
+                            <h6>Daftar Mata Kuliah</h6>
+                            <ul class="semester-courses">
+                                <li>Pengantar Teknik Pertambangan</li>
+                                <li>Matematika Teknik I</li>
+                                <li>Fisika Dasar untuk Pertambangan</li>
+                                <li>Kimia Dasar</li>
+                                <li>Geologi Umum</li>
+                            </ul>
+                        </div>
+                    </details>
+                    <details class="semester-item">
+                        <summary>
+                            <span class="semester-label">Semester 2</span>
+                            <span class="semester-overview">Pendalaman geologi dan pemetaan dasar untuk eksplorasi mineral.</span>
+                        </summary>
+                        <div class="semester-section">
+                            <h6>Daftar Mata Kuliah</h6>
+                            <ul class="semester-courses">
+                                <li>Geologi Fisik</li>
+                                <li>Matematika Teknik II</li>
+                                <li>Statika dan Dinamika</li>
+                                <li>Pemetaan Geologi</li>
+                                <li>Praktikum Mineralogi</li>
+                            </ul>
+                        </div>
+                    </details>
+                    <details class="semester-item">
+                        <summary>
+                            <span class="semester-label">Semester 3</span>
+                            <span class="semester-overview">Teknik eksplorasi dan karakterisasi material tambang.</span>
+                        </summary>
+                        <div class="semester-section">
+                            <h6>Daftar Mata Kuliah</h6>
+                            <ul class="semester-courses">
+                                <li>Geofisika Tambang</li>
+                                <li>Mekanika Tanah</li>
+                                <li>Eksplorasi Sumber Daya Mineral</li>
+                                <li>Teknik Lingkungan Pertambangan</li>
+                                <li>Statistik Teknik</li>
+                            </ul>
+                        </div>
+                    </details>
+                    <details class="semester-item">
+                        <summary>
+                            <span class="semester-label">Semester 4</span>
+                            <span class="semester-overview">Perencanaan tambang terbuka, ventilasi, dan ekonomi tambang.</span>
+                        </summary>
+                        <div class="semester-section">
+                            <h6>Daftar Mata Kuliah</h6>
+                            <ul class="semester-courses">
+                                <li>Perencanaan Tambang Terbuka</li>
+                                <li>Ventilasi Tambang</li>
+                                <li>Ekonomi Pertambangan</li>
+                                <li>Hidrologi Tambang</li>
+                                <li>Praktikum Pemodelan Tambang</li>
+                            </ul>
+                        </div>
+                    </details>
+                </div>
+            </div>
+        </section>
+
+        <section class="program-detail-cta" aria-label="Mulai perjalananmu di Teknik Pertambangan">
+            <div class="container program-detail-cta__content">
+                <div>
+                    <h2>Siap merancang masa depan pertambangan yang berkelanjutan?</h2>
+                    <p>
+                        Daftar sekarang untuk mendapatkan akses ke kelas perdana, modul interaktif, dan sesi mentoring
+                        eksklusif.
+                    </p>
+                </div>
+                <div class="program-detail-cta__actions">
+                    <a href="daftar.html" class="btn">Daftar Gratis</a>
+                    <a href="dashboard.html" class="btn secondary">Lihat Dashboard</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        &copy; 2024 Edlevator. Semua hak dilindungi.
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" src="script.js"></script>
+</body>
+</html>

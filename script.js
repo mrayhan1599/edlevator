@@ -6,6 +6,49 @@ import {
   onAuthStateChange,
 } from "./auth.js";
 
+const SAMPLE_COURSES = [
+  {
+    id: "sample-ipa-tech",
+    title: "Pengantar Teknik & Teknologi",
+    category: "IPA - Teknik",
+    level: "Pemula",
+    hours: 12,
+    rating: 4.8,
+    instructor: "Tim Mentor Edlevator",
+    isSample: true,
+  },
+  {
+    id: "sample-ipa-med",
+    title: "Dasar Kedokteran Modern",
+    category: "IPA - Kedokteran",
+    level: "Menengah",
+    hours: 10,
+    rating: 4.7,
+    instructor: "Dr. Aureliani",
+    isSample: true,
+  },
+  {
+    id: "sample-ips-biz",
+    title: "Manajemen Bisnis Digital",
+    category: "IPS - Manajemen",
+    level: "Pemula",
+    hours: 8,
+    rating: 4.6,
+    instructor: "Mentor Startup",
+    isSample: true,
+  },
+  {
+    id: "sample-ips-comm",
+    title: "Komunikasi Strategis & Branding",
+    category: "IPS - Komunikasi",
+    level: "Menengah",
+    hours: 9,
+    rating: 4.5,
+    instructor: "Praktisi Media",
+    isSample: true,
+  },
+];
+
 export async function loadCourses() {
   const { data, error } = await supabaseClient
     .from("courses")
@@ -16,7 +59,11 @@ export async function loadCourses() {
     throw error;
   }
 
-  return data ?? [];
+  if (data && data.length > 0) {
+    return data;
+  }
+
+  return SAMPLE_COURSES;
 }
 
 export async function enroll(courseId) {
@@ -186,6 +233,10 @@ function updateDashboardAccess() {
 function renderCourseCard(course) {
   const wrapper = document.createElement("article");
   wrapper.className = "course-card";
+  const enrollLabel = course.isSample ? "Segera Hadir" : "Daftar";
+  const enrollAttributes = course.isSample
+    ? "disabled"
+    : `data-action="enroll" data-course-id="${course.id}"`;
   wrapper.innerHTML = `
     <div class="course-header">
       <div>
@@ -203,12 +254,12 @@ function renderCourseCard(course) {
     </div>
     <div class="course-actions">
       <button type="button" class="btn secondary" data-action="preview">Lihat Detail</button>
-      <button type="button" class="btn" data-action="enroll" data-course-id="${course.id}">Daftar</button>
+      <button type="button" class="btn" ${enrollAttributes}>${enrollLabel}</button>
     </div>
   `;
 
-  const enrollButton = wrapper.querySelector("[data-action='enroll']");
-  if (enrollButton) {
+  const enrollButton = wrapper.querySelector(".course-actions .btn:last-child");
+  if (enrollButton && !course.isSample) {
     enrollButton.addEventListener("click", () => {
       enroll(course.id);
     });
@@ -248,8 +299,11 @@ function applyCourseFilters() {
       course.instructor?.toLowerCase().includes(keyword) ||
       course.category?.toLowerCase().includes(keyword);
 
-    const matchesCategory = category === "" || course.category === category;
-    const matchesLevel = level === "" || course.level === level;
+    const matchesCategory =
+      category === "" ||
+      (course.category ?? "").toLowerCase() === category.toLowerCase();
+    const matchesLevel =
+      level === "" || (course.level ?? "").toLowerCase() === level.toLowerCase();
 
     return matchesKeyword && matchesCategory && matchesLevel;
   });

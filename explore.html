@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explore Jurusan - Edlevator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="logo" aria-label="Beranda Edlevator">
+                <span>E</span>
+                Edlevator
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="explore.html" aria-current="page">Explore</a></li>
+                <li><a href="admin.html">Admin</a></li>
+            </ul>
+            <div class="nav-actions" id="nav-auth"></div>
+        </div>
+    </nav>
+
+    <main>
+        <header class="explore-hero">
+            <div class="container">
+                <h1>Eksplorasi Jurusan Kampus Favoritmu</h1>
+                <p>Temukan jurusan impian lewat kurasi kelas IPA dan IPS yang disusun dengan mentor berpengalaman. Pilih rumpun di bawah ini, lalu jelajahi sub-kategori yang sesuai minatmu.</p>
+                <div class="explore-tabs" role="tablist" aria-label="Pilihan rumpun jurusan">
+                    <button type="button" class="explore-tab is-active" role="tab" aria-selected="true" data-track="ipa">Jurusan IPA</button>
+                    <button type="button" class="explore-tab" role="tab" aria-selected="false" data-track="ips">Jurusan IPS</button>
+                </div>
+            </div>
+        </header>
+
+        <section class="explore-section" aria-labelledby="explore-track-heading">
+            <div class="container">
+                <header class="explore-section-header">
+                    <div>
+                        <p class="badge" id="explore-track-label">Jurusan IPA</p>
+                        <h2 id="explore-track-heading">Pilih sub-kategori yang ingin kamu jelajahi</h2>
+                    </div>
+                    <p class="explore-section-subtitle">Setiap sub-kategori dilengkapi highlight kompetensi, contoh mata kuliah, dan jalur karier populer untuk membantumu mengambil keputusan.</p>
+                </header>
+                <div class="program-grid" id="explore-programs" aria-live="polite">
+                    <!-- Konten diisi melalui explore.js -->
+                </div>
+            </div>
+        </section>
+
+        <section class="explore-cta" aria-label="Mulai belajar bersama Edlevator">
+            <div class="container explore-cta-content">
+                <div>
+                    <h2>Siap belajar lebih terarah?</h2>
+                    <p>Masuk ke dashboard untuk melihat detail kelas, memantau progres, dan mendaftar secara langsung.</p>
+                </div>
+                <div class="explore-cta-actions">
+                    <a href="dashboard.html" class="btn">Buka Dashboard</a>
+                    <a href="daftar.html" class="btn secondary">Daftar Gratis</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        &copy; 2024 Edlevator. Semua hak dilindungi.
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" src="script.js"></script>
+    <script type="module" src="explore.js"></script>
+</body>
+</html>

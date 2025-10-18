@@ -121,6 +121,15 @@ button:hover {
     box-shadow: 0 12px 24px rgba(79, 70, 229, 0.25);
 }
 
+.btn[disabled],
+button[disabled],
+.btn.is-disabled {
+    background: rgba(79, 70, 229, 0.35);
+    box-shadow: none;
+    cursor: not-allowed;
+    transform: none;
+}
+
 .btn:focus,
 button:focus {
     outline: 3px solid rgba(79, 70, 229, 0.3);
@@ -297,6 +306,17 @@ footer {
     border: 1px solid var(--border);
     background: #fff;
     font-size: 0.95rem;
+}
+
+.filters-helper {
+    color: var(--text-light);
+    font-size: 0.95rem;
+    margin-top: -0.25rem;
+}
+
+.filters-helper a {
+    color: var(--primary);
+    font-weight: 600;
 }
 
 .course-grid {
@@ -494,6 +514,176 @@ footer {
     outline: 3px solid rgba(79, 70, 229, 0.2);
 }
 
+.explore-hero {
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.92), rgba(59, 130, 246, 0.9));
+    color: #fff;
+    padding: 5rem 1.5rem 4rem;
+}
+
+.explore-hero .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    gap: 1.5rem;
+}
+
+.explore-hero p {
+    max-width: 680px;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.explore-tabs {
+    display: inline-flex;
+    background: rgba(17, 24, 39, 0.25);
+    border-radius: 999px;
+    padding: 0.5rem;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.explore-tab {
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.8);
+    padding: 0.65rem 1.5rem;
+    border-radius: 999px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.explore-tab.is-active {
+    background: #fff;
+    color: var(--primary);
+    box-shadow: 0 10px 25px rgba(255, 255, 255, 0.35);
+}
+
+.explore-section {
+    padding: 4.5rem 1.5rem;
+}
+
+.explore-section .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    gap: 2.5rem;
+}
+
+.explore-section-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 1.5rem;
+    align-items: flex-start;
+}
+
+.explore-section-subtitle {
+    max-width: 420px;
+    color: var(--text-light);
+}
+
+.program-grid {
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.program-card {
+    background: var(--card);
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    display: grid;
+    grid-template-rows: 200px 1fr;
+}
+
+.program-illustration {
+    height: 100%;
+    overflow: hidden;
+}
+
+.program-illustration img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.program-content {
+    padding: 1.75rem;
+    display: grid;
+    gap: 1.25rem;
+}
+
+.program-content h3 {
+    font-size: 1.35rem;
+    color: var(--primary);
+}
+
+.program-highlights {
+    list-style: none;
+    display: grid;
+    gap: 0.75rem;
+    color: var(--text-light);
+}
+
+.program-highlights li::before {
+    content: "✔";
+    color: var(--secondary);
+    margin-right: 0.65rem;
+}
+
+.program-courses {
+    display: grid;
+    gap: 0.75rem;
+    color: var(--text-light);
+    font-size: 0.95rem;
+}
+
+.program-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.chip {
+    display: inline-flex;
+    padding: 0.45rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(79, 70, 229, 0.12);
+    color: var(--primary);
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.program-actions {
+    display: flex;
+    justify-content: flex-start;
+}
+
+.program-actions .btn.small {
+    padding: 0.65rem 1.25rem;
+}
+
+.explore-cta {
+    padding: 4rem 1.5rem;
+    background: linear-gradient(120deg, rgba(79, 70, 229, 0.12), rgba(96, 165, 250, 0.12));
+}
+
+.explore-cta-content {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+}
+
+.explore-cta-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
 .thankyou {
     max-width: 520px;
     margin: 5rem auto;
@@ -572,5 +762,18 @@ footer {
 
     .course-actions .btn {
         flex: 1;
+    }
+
+    .explore-hero {
+        padding: 4rem 1.5rem 3rem;
+    }
+
+    .explore-cta-content {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .explore-cta-actions {
+        justify-content: center;
     }
 }

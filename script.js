@@ -7,6 +7,7 @@ import {
 } from "./auth.js";
 
 let navProfileCleanup = null;
+let navMainDropdownCleanup = null;
 
 const SAMPLE_COURSES = [
   {
@@ -229,6 +230,13 @@ function cleanupNavProfileMenu() {
   }
 }
 
+function cleanupMainNavDropdowns() {
+  if (typeof navMainDropdownCleanup === "function") {
+    navMainDropdownCleanup();
+    navMainDropdownCleanup = null;
+  }
+}
+
 function setupNavProfileMenu() {
   cleanupNavProfileMenu();
 
@@ -374,6 +382,164 @@ function renderNavbar() {
   }
 
   setupNavProfileMenu();
+}
+
+function setupMainNavDropdowns() {
+  cleanupMainNavDropdowns();
+
+  const dropdownItems = Array.from(
+    document.querySelectorAll(".nav-item-has-submenu")
+  );
+
+  if (!dropdownItems.length) {
+    return;
+  }
+
+  const closeItem = (item) => {
+    const toggle = item.querySelector(".nav-link-toggle");
+    const menu = item.querySelector(".nav-submenu");
+
+    if (toggle && menu && !menu.hasAttribute("hidden")) {
+      menu.setAttribute("hidden", "");
+      toggle.setAttribute("aria-expanded", "false");
+      item.classList.remove("open");
+    }
+  };
+
+  const closeAll = () => {
+    dropdownItems.forEach((item) => closeItem(item));
+  };
+
+  const documentClickHandler = (event) => {
+    if (dropdownItems.some((item) => item.contains(event.target))) {
+      return;
+    }
+    closeAll();
+  };
+
+  const documentKeydownHandler = (event) => {
+    if (event.key === "Escape") {
+      const openItem = dropdownItems.find((item) =>
+        item.classList.contains("open")
+      );
+      closeAll();
+      const openToggle = openItem?.querySelector(".nav-link-toggle");
+      openToggle?.focus();
+    }
+  };
+
+  const cleanupCallbacks = [];
+
+  dropdownItems.forEach((item) => {
+    const toggle = item.querySelector(".nav-link-toggle");
+    const menu = item.querySelector(".nav-submenu");
+
+    if (!toggle || !menu) {
+      return;
+    }
+
+    const getFocusableItems = () =>
+      Array.from(menu.querySelectorAll("a, button"));
+
+    const openMenu = (focusStrategy = "none") => {
+      if (!menu.hasAttribute("hidden")) {
+        return;
+      }
+
+      closeAll();
+      menu.removeAttribute("hidden");
+      toggle.setAttribute("aria-expanded", "true");
+      item.classList.add("open");
+
+      const focusableItems = getFocusableItems();
+      if (focusStrategy === "first") {
+        focusableItems[0]?.focus();
+      } else if (focusStrategy === "last") {
+        focusableItems[focusableItems.length - 1]?.focus();
+      }
+    };
+
+    const toggleMenu = (focusStrategy = "none") => {
+      if (menu.hasAttribute("hidden")) {
+        openMenu(focusStrategy);
+      } else {
+        menu.setAttribute("hidden", "");
+        toggle.setAttribute("aria-expanded", "false");
+        item.classList.remove("open");
+      }
+    };
+
+    const handleToggleClick = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleMenu();
+    };
+
+    const handleToggleKeydown = (event) => {
+      if (event.key === " " || event.key === "Enter") {
+        event.preventDefault();
+        toggleMenu("first");
+        return;
+      }
+
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        openMenu("first");
+        return;
+      }
+
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        openMenu("last");
+        return;
+      }
+    };
+
+    const handleMenuKeydown = (event) => {
+      if (event.key === "Escape") {
+        menu.setAttribute("hidden", "");
+        toggle.setAttribute("aria-expanded", "false");
+        item.classList.remove("open");
+        toggle.focus();
+      }
+    };
+
+    const handleMenuClick = () => {
+      menu.setAttribute("hidden", "");
+      toggle.setAttribute("aria-expanded", "false");
+      item.classList.remove("open");
+    };
+
+    toggle.setAttribute("aria-haspopup", "true");
+    toggle.setAttribute("aria-expanded", "false");
+
+    toggle.addEventListener("click", handleToggleClick);
+    toggle.addEventListener("keydown", handleToggleKeydown);
+    menu.addEventListener("keydown", handleMenuKeydown);
+
+    const menuLinks = Array.from(menu.querySelectorAll("a"));
+    menuLinks.forEach((link) => {
+      link.addEventListener("click", handleMenuClick);
+    });
+
+    cleanupCallbacks.push(() => {
+      toggle.removeEventListener("click", handleToggleClick);
+      toggle.removeEventListener("keydown", handleToggleKeydown);
+      menu.removeEventListener("keydown", handleMenuKeydown);
+      menuLinks.forEach((link) => {
+        link.removeEventListener("click", handleMenuClick);
+      });
+    });
+  });
+
+  document.addEventListener("click", documentClickHandler);
+  document.addEventListener("keydown", documentKeydownHandler);
+
+  navMainDropdownCleanup = () => {
+    cleanupCallbacks.forEach((callback) => callback());
+    document.removeEventListener("click", documentClickHandler);
+    document.removeEventListener("keydown", documentKeydownHandler);
+  };
 }
 
 function updateDashboardAccess() {
@@ -1061,6 +1227,7 @@ async function handleAvatarSubmit(event) {
 
   try {
     await saveAvatarToDatabase(selectedAvatarDataUrl);
+    await loadProfileDetailsFromDatabase();
     selectedAvatarDataUrl = null;
     setFeedbackMessage(avatarFeedbackEl, "Foto profil berhasil disimpan.", true);
     updateAvatarPreview();
@@ -1170,6 +1337,7 @@ async function handleProfileInfoSubmit(event) {
 
   try {
     await saveProfileDetailsToDatabase(payload);
+    await loadProfileDetailsFromDatabase();
     populateProfileFormFields();
     renderNavbar();
     updateAvatarPreview();
@@ -1499,6 +1667,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   adminStatusFilter = document.getElementById("admin-filter-status");
   adminEmptyState = document.getElementById("admin-empty-state");
 
+  setupMainNavDropdowns();
   initializeEventListeners();
   initializeProfileForms();
   await initializeCourseFilters();

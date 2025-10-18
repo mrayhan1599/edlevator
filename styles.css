@@ -17,6 +17,10 @@
     box-sizing: border-box;
 }
 
+*[hidden] {
+    display: none !important;
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     color: var(--text-dark);
@@ -92,13 +96,98 @@ img {
     transition: color 0.2s ease;
 }
 
+.nav-links a[aria-current="page"] {
+    color: var(--primary);
+    font-weight: 600;
+}
+
 .nav-links a:hover,
 .nav-links a:focus {
     color: var(--primary);
 }
 
+.nav-item-has-submenu {
+    position: relative;
+}
+
+.nav-link-toggle {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    font-weight: 500;
+    color: var(--text-light);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    line-height: 1.2;
+    box-shadow: none;
+    transition: color 0.2s ease;
+}
+
+.nav-link-toggle:hover,
+.nav-link-toggle:focus {
+    color: var(--primary);
+    background: none;
+    transform: none;
+    box-shadow: none;
+}
+
+.nav-link-toggle:focus {
+    outline: none;
+}
+
+.nav-link-toggle:focus-visible {
+    outline: 3px solid rgba(79, 70, 229, 0.35);
+    outline-offset: 3px;
+}
+
+.nav-link-icon {
+    font-size: 0.75rem;
+    transition: transform 0.2s ease;
+}
+
+.nav-item-has-submenu.open > .nav-link-toggle .nav-link-icon {
+    transform: rotate(180deg);
+}
+
+.nav-item-has-submenu.current > .nav-link-toggle {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.nav-submenu {
+    list-style: none;
+    position: absolute;
+    top: calc(100% + 0.75rem);
+    left: 0;
+    min-width: 200px;
+    background: var(--card);
+    border-radius: 16px;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+    padding: 0.75rem;
+    display: grid;
+    gap: 0.35rem;
+    border: 1px solid var(--border);
+    z-index: 15;
+}
+
+.nav-submenu a {
+    display: block;
+    color: var(--text-dark);
+    font-weight: 500;
+    padding: 0.35rem 0.25rem;
+}
+
+.nav-submenu a:hover,
+.nav-submenu a:focus {
+    color: var(--primary);
+}
+
 .btn,
-button {
+button:not(.nav-link-toggle) {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -118,14 +207,14 @@ button {
 }
 
 .btn:hover,
-button:hover {
+button:not(.nav-link-toggle):hover {
     background: var(--primary-dark);
     transform: translateY(-2px);
     box-shadow: 0 12px 24px rgba(79, 70, 229, 0.25);
 }
 
 .btn[disabled],
-button[disabled],
+button[disabled]:not(.nav-link-toggle),
 .btn.is-disabled {
     background: rgba(79, 70, 229, 0.35);
     box-shadow: none;
@@ -134,7 +223,7 @@ button[disabled],
 }
 
 .btn:focus,
-button:focus {
+button:not(.nav-link-toggle):focus {
     outline: 3px solid rgba(79, 70, 229, 0.3);
     outline-offset: 2px;
 }

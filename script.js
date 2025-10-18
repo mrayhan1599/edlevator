@@ -61,6 +61,33 @@ const SAMPLE_COURSES = [
   },
 ];
 
+const AUTH_SESSION_MISSING = "AUTH_SESSION_MISSING";
+
+function isAuthSessionMissingError(error) {
+  if (!error) {
+    return false;
+  }
+
+  const message = (error.message ?? "").toString().toLowerCase();
+  return (
+    message.includes("session not found") ||
+    message.includes("session missing") ||
+    message.includes("session expired") ||
+    message.includes("auth session")
+  );
+}
+
+function toAuthSessionMissingError(error) {
+  if (!isAuthSessionMissingError(error)) {
+    return null;
+  }
+
+  const sessionError = new Error("AUTH_SESSION_MISSING");
+  sessionError.code = AUTH_SESSION_MISSING;
+  sessionError.cause = error;
+  return sessionError;
+}
+
 export async function loadCourses() {
   const { data, error } = await supabaseClient
     .from("courses")
@@ -197,6 +224,7 @@ let profileEmailInput = null;
 let selectedAvatarDataUrl = null;
 let selectedAvatarFile = null;
 let cachedAvatarStoragePath = null;
+let lastProfileDetailsRecheck = 0;
 
 const AVATAR_BUCKET = "avatars";
 const MAX_AVATAR_FILE_SIZE = 2 * 1024 * 1024; // 2 MB
@@ -327,8 +355,91 @@ function buildProfileDetails({ detailsData = {}, metadata = {} } = {}) {
       typeof avatarStoragePathSource === "string" &&
       avatarStoragePathSource.trim() !== ""
         ? avatarStoragePathSource
-        : null,
+      : null,
   };
+}
+
+async function seedProfileTablesFromMetadata(data = {}) {
+  if (!cachedSession?.user?.id || !supabaseClient) {
+    return false;
+  }
+
+  const metadata = cachedSession.user?.user_metadata ?? {};
+  const userId = cachedSession.user.id;
+
+  const fullNameSource =
+    data.fullName ??
+    metadata.full_name ??
+    metadata.fullName ??
+    metadataValue(metadata, "full_name");
+
+  const profilePayload = { id: userId };
+  if (typeof fullNameSource === "string" && fullNameSource.trim() !== "") {
+    profilePayload.full_name = fullNameSource.trim();
+  }
+
+  const { error: profileError } = await supabaseClient
+    .from("profiles")
+    .upsert(profilePayload, { onConflict: "id" });
+
+  if (profileError) {
+    if (isProfilesWriteUnsupportedError(profileError)) {
+      profilesTableSupported = false;
+    } else {
+      throw profileError;
+    }
+  } else {
+    profilesTableSupported = true;
+  }
+
+  const detailsPayload = {
+    user_id: userId,
+    birthdate: data.birthdate || metadataValue(metadata, "birthdate") || null,
+    gender: normalizeProfileValue(
+      data.gender ?? metadataValue(metadata, "gender")
+    ),
+    track: normalizeProfileValue(data.track ?? metadataValue(metadata, "track")),
+    major: normalizeProfileValue(data.major ?? metadataValue(metadata, "major")),
+    occupation: normalizeProfileValue(
+      data.occupation ?? metadataValue(metadata, "occupation")
+    ),
+    company: normalizeProfileValue(
+      data.company ?? metadataValue(metadata, "company")
+    ),
+    location: normalizeProfileValue(
+      data.location ?? metadataValue(metadata, "location")
+    ),
+    bio: normalizeProfileValue(data.bio ?? metadataValue(metadata, "bio")),
+    avatar_data_url: normalizeProfileValue(
+      data.avatarDataUrl ?? metadataValue(metadata, "avatar_data_url")
+    ),
+    avatar_storage_path: normalizeProfileValue(
+      data.avatarStoragePath ?? metadataValue(metadata, "avatar_storage_path")
+    ),
+  };
+
+  const { error: insertError } = await supabaseClient
+    .from("profile_details")
+    .insert(detailsPayload);
+
+  if (insertError) {
+    if (insertError.code === "23505" || insertError.code === "PGRST116") {
+      profileDetailsSupported = true;
+      return false;
+    }
+    if (insertError.code === "23503") {
+      return false;
+    }
+    if (isProfileDetailsUnsupportedError(insertError)) {
+      profileDetailsSupported = false;
+      lastProfileDetailsRecheck = Date.now();
+      return false;
+    }
+    throw insertError;
+  }
+
+  profileDetailsSupported = true;
+  return true;
 }
 
 function getCurrentProfileData() {
@@ -419,6 +530,10 @@ async function persistProfileMetadata(
   });
 
   if (error) {
+    const sessionError = toAuthSessionMissingError(error);
+    if (sessionError) {
+      throw sessionError;
+    }
     throw error;
   }
 
@@ -522,11 +637,38 @@ function setupNavProfileMenu() {
     logoutHandler = async () => {
       try {
         await signOut();
-        closeMenu();
+      } catch (error) {
+        if (isAuthSessionMissingError(error)) {
+          console.warn("Sesi sudah berakhir saat mencoba logout", error);
+        } else {
+          console.error(error);
+          alert("Gagal logout. Coba lagi.");
+          return;
+        }
+      }
+      closeMenu();
+      cachedSession = null;
+      cachedProfile = null;
+      cachedProfileDetails = null;
+      cachedAvatarDataUrl = null;
+      cachedAvatarStoragePath = null;
+      profileDetailsSupported = true;
+      profilesTableSupported = true;
+      lastProfileDetailsRecheck = 0;
+      renderNavbar();
+      hydrateProfileUI();
+      updateDashboardAccess();
+      refreshMyEnrollmentsUI();
+      try {
         await updateSession();
       } catch (error) {
-        console.error(error);
-        alert("Gagal logout. Coba lagi.");
+        console.error("Gagal memperbarui status sesi setelah logout", error);
+      }
+      if (typeof window !== "undefined") {
+        const currentPath = window.location.pathname || "";
+        if (currentPath.endsWith("profile.html") || currentPath.endsWith("dashboard.html")) {
+          window.location.href = "login.html";
+        }
       }
     };
     logoutButton.addEventListener("click", logoutHandler);
@@ -1076,13 +1218,25 @@ async function updateSession() {
       : null;
 
     if (cachedSession) {
-      await loadProfileDetailsFromDatabase();
+      const now = Date.now();
+      const shouldForceRecheck =
+        profileDetailsSupported === false &&
+        (now - lastProfileDetailsRecheck > 15000 || lastProfileDetailsRecheck === 0);
+
+      if (shouldForceRecheck) {
+        lastProfileDetailsRecheck = now;
+      }
+
+      await loadProfileDetailsFromDatabase({
+        forceRecheck: shouldForceRecheck,
+      });
     } else {
       cachedProfileDetails = null;
       cachedAvatarDataUrl = null;
       cachedAvatarStoragePath = null;
       profileDetailsSupported = true;
       profilesTableSupported = true;
+      lastProfileDetailsRecheck = 0;
     }
   } catch (error) {
     console.error(error);
@@ -1092,6 +1246,7 @@ async function updateSession() {
     cachedAvatarDataUrl = null;
     cachedAvatarStoragePath = null;
     profilesTableSupported = true;
+    lastProfileDetailsRecheck = 0;
   }
 
   renderNavbar();
@@ -1169,7 +1324,7 @@ function updateUserStats() {
   statAverageScoreEl.textContent = averageScore.toFixed(1);
 }
 
-async function loadProfileDetailsFromDatabase() {
+async function loadProfileDetailsFromDatabase({ forceRecheck = false } = {}) {
   cachedProfileDetails = null;
   cachedAvatarDataUrl = null;
 
@@ -1177,28 +1332,43 @@ async function loadProfileDetailsFromDatabase() {
     return;
   }
 
+  const metadata = cachedSession.user?.user_metadata ?? {};
+
+  if (profileDetailsSupported === false && !forceRecheck) {
+    cachedProfileDetails = buildProfileDetails({ metadata });
+    cachedAvatarDataUrl = cachedProfileDetails.avatarDataUrl ?? null;
+    cachedAvatarStoragePath = cachedProfileDetails.avatarStoragePath ?? null;
+    return;
+  }
+
   try {
-    const metadata = cachedSession.user?.user_metadata ?? {};
+    const queryProfileDetails = async () =>
+      supabaseClient
+        .from("profile_details")
+        .select(
+          "birthdate, gender, track, major, occupation, company, location, bio, avatar_data_url, avatar_storage_path"
+        )
+        .eq("user_id", cachedSession.user.id)
+        .maybeSingle();
 
-    if (!profileDetailsSupported) {
-      cachedProfileDetails = buildProfileDetails({ metadata });
-      cachedAvatarDataUrl = cachedProfileDetails.avatarDataUrl ?? null;
-      return;
+    let { data, error } = await queryProfileDetails();
+
+    if ((!data && !error) || error?.code === "PGRST116") {
+      await seedProfileTablesFromMetadata();
+      if (profileDetailsSupported !== false) {
+        const retryResult = await queryProfileDetails();
+        data = retryResult.data ?? null;
+        error = retryResult.error ?? null;
+      }
     }
-
-    const { data, error } = await supabaseClient
-      .from("profile_details")
-      .select(
-        "birthdate, gender, track, major, occupation, company, location, bio, avatar_data_url, avatar_storage_path"
-      )
-      .eq("user_id", cachedSession.user.id)
-      .maybeSingle();
 
     if (error && error.code !== "PGRST116") {
       if (isProfileDetailsUnsupportedError(error)) {
         profileDetailsSupported = false;
+        lastProfileDetailsRecheck = Date.now();
         cachedProfileDetails = buildProfileDetails({ metadata });
         cachedAvatarDataUrl = cachedProfileDetails.avatarDataUrl ?? null;
+        cachedAvatarStoragePath = cachedProfileDetails.avatarStoragePath ?? null;
         return;
       }
       throw error;
@@ -1212,12 +1382,16 @@ async function loadProfileDetailsFromDatabase() {
     cachedAvatarStoragePath = cachedProfileDetails.avatarStoragePath ?? null;
     profileDetailsSupported = true;
   } catch (error) {
-    const metadata = cachedSession?.user?.user_metadata ?? {};
     if (isProfileDetailsUnsupportedError(error)) {
       profileDetailsSupported = false;
+      lastProfileDetailsRecheck = Date.now();
       cachedProfileDetails = buildProfileDetails({ metadata });
       cachedAvatarDataUrl = cachedProfileDetails.avatarDataUrl ?? null;
-      console.warn("Tabel profile_details tidak tersedia. Menggunakan metadata pengguna.");
+      cachedAvatarStoragePath = cachedProfileDetails.avatarStoragePath ?? null;
+      console.warn(
+        "Tabel profile_details tidak tersedia. Menggunakan metadata pengguna.",
+        error
+      );
       return;
     }
 
@@ -1263,38 +1437,48 @@ async function saveProfileDetailsToDatabase(data) {
 
   let profileSaved = false;
 
-  if (profilesTableSupported) {
-    const { error: profileError } = await supabaseClient
-      .from("profiles")
-      .upsert(profilePayload, { onConflict: "id" });
+  const { error: profileError } = await supabaseClient
+    .from("profiles")
+    .upsert(profilePayload, { onConflict: "id" });
 
-    if (profileError) {
-      if (isProfilesWriteUnsupportedError(profileError)) {
-        profilesTableSupported = false;
-      } else {
-        throw profileError;
-      }
+  if (profileError) {
+    if (isProfilesWriteUnsupportedError(profileError)) {
+      profilesTableSupported = false;
     } else {
-      profileSaved = true;
+      throw profileError;
     }
+  } else {
+    profileSaved = true;
+    profilesTableSupported = true;
   }
 
   let detailsSaved = false;
-
-  if (profileDetailsSupported) {
-    const { error: detailsError } = await supabaseClient
+  const upsertDetails = () =>
+    supabaseClient
       .from("profile_details")
       .upsert(detailsPayload, { onConflict: "user_id" });
 
-    if (detailsError) {
-      if (isProfileDetailsUnsupportedError(detailsError)) {
-        profileDetailsSupported = false;
-      } else {
-        throw detailsError;
-      }
+  let { error: detailsError } = await upsertDetails();
+
+  if (detailsError?.code === "23503") {
+    await seedProfileTablesFromMetadata({
+      ...data,
+      avatarDataUrl: cachedAvatarDataUrl ?? null,
+      avatarStoragePath: cachedAvatarStoragePath ?? null,
+    });
+    ({ error: detailsError } = await upsertDetails());
+  }
+
+  if (detailsError) {
+    if (isProfileDetailsUnsupportedError(detailsError)) {
+      profileDetailsSupported = false;
+      lastProfileDetailsRecheck = Date.now();
     } else {
-      detailsSaved = true;
+      throw detailsError;
     }
+  } else {
+    detailsSaved = true;
+    profileDetailsSupported = true;
   }
 
   if (!detailsSaved || !profileSaved) {
@@ -1380,21 +1564,31 @@ async function saveAvatarToDatabase({ dataUrl, file }) {
   };
 
   let stored = false;
-
-  if (profileDetailsSupported) {
-    const { error } = await supabaseClient
+  const upsertAvatar = () =>
+    supabaseClient
       .from("profile_details")
       .upsert(payload, { onConflict: "user_id" });
 
-    if (error) {
-      if (isProfileDetailsUnsupportedError(error)) {
-        profileDetailsSupported = false;
-      } else {
-        throw error;
-      }
+  let { error } = await upsertAvatar();
+
+  if (error?.code === "23503") {
+    await seedProfileTablesFromMetadata({
+      avatarDataUrl: avatarUrl,
+      avatarStoragePath: storagePath,
+    });
+    ({ error } = await upsertAvatar());
+  }
+
+  if (error) {
+    if (isProfileDetailsUnsupportedError(error)) {
+      profileDetailsSupported = false;
+      lastProfileDetailsRecheck = Date.now();
     } else {
-      stored = true;
+      throw error;
     }
+  } else {
+    stored = true;
+    profileDetailsSupported = true;
   }
 
   const currentData = getCurrentProfileData();
@@ -1803,6 +1997,15 @@ async function handleAvatarSubmit(event) {
     renderNavbar();
   } catch (error) {
     console.error(error);
+    if (error?.code === AUTH_SESSION_MISSING) {
+      setFeedbackMessage(
+        avatarFeedbackEl,
+        "Sesi login kamu sudah berakhir. Masuk kembali lalu coba unggah lagi.",
+        false
+      );
+      await updateSession();
+      return;
+    }
     const errorMessage =
       error?.message === "AVATAR_BUCKET_MISSING"
         ? "Bucket penyimpanan avatar belum disiapkan. Ikuti panduan Supabase di README."
@@ -1860,6 +2063,10 @@ async function handlePasswordSubmit(event) {
       password: newPassword,
     });
     if (error) {
+      const sessionError = toAuthSessionMissingError(error);
+      if (sessionError) {
+        throw sessionError;
+      }
       throw error;
     }
     passwordForm?.reset();
@@ -1870,6 +2077,15 @@ async function handlePasswordSubmit(event) {
     );
   } catch (error) {
     console.error(error);
+    if (error?.code === AUTH_SESSION_MISSING) {
+      setFeedbackMessage(
+        passwordFeedbackEl,
+        "Sesi login kamu sudah habis. Masuk kembali untuk mengganti kata sandi.",
+        false
+      );
+      await updateSession();
+      return;
+    }
     setFeedbackMessage(
       passwordFeedbackEl,
       "Gagal memperbarui kata sandi. Coba lagi nanti.",
@@ -1913,6 +2129,15 @@ async function handleProfileInfoSubmit(event) {
     setFeedbackMessage(profileInfoFeedbackEl, "Profil berhasil disimpan.", true);
   } catch (error) {
     console.error(error);
+    if (error?.code === AUTH_SESSION_MISSING) {
+      setFeedbackMessage(
+        profileInfoFeedbackEl,
+        "Sesi login kamu sudah tidak berlaku. Masuk kembali lalu simpan profilmu.",
+        false
+      );
+      await updateSession();
+      return;
+    }
     setFeedbackMessage(
       profileInfoFeedbackEl,
       "Gagal menyimpan profil. Coba lagi nanti.",

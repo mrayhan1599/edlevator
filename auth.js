@@ -173,9 +173,9 @@ export async function signIn(email, password) {
   return data;
 }
 
-export async function signOut() {
+export async function signOut({ scope = "local" } = {}) {
   const client = ensureClient();
-  const { error } = await client.auth.signOut();
+  const { error } = await client.auth.signOut({ scope });
   if (error) {
     throw error;
   }

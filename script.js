@@ -19,6 +19,7 @@ const SAMPLE_COURSES = [
     id: "sample-ipa-tech",
     title: "Pengantar Teknik & Teknologi",
     category: "IPA - Teknik",
+    track: "IPA",
     level: "Pemula",
     hours: 12,
     rating: 4.8,
@@ -30,6 +31,7 @@ const SAMPLE_COURSES = [
     id: "sample-ipa-med",
     title: "Dasar Kedokteran Modern",
     category: "IPA - Kedokteran",
+    track: "IPA",
     level: "Menengah",
     hours: 10,
     rating: 4.7,
@@ -41,6 +43,7 @@ const SAMPLE_COURSES = [
     id: "sample-ips-biz",
     title: "Manajemen Bisnis Digital",
     category: "IPS - Manajemen",
+    track: "IPS",
     level: "Pemula",
     hours: 8,
     rating: 4.6,
@@ -52,6 +55,7 @@ const SAMPLE_COURSES = [
     id: "sample-ips-comm",
     title: "Komunikasi Strategis & Branding",
     category: "IPS - Komunikasi",
+    track: "IPS",
     level: "Menengah",
     hours: 9,
     rating: 4.5,
@@ -121,7 +125,8 @@ function isColumnMissingError(error, columnName) {
 }
 
 export async function loadCourses() {
-  const baseColumns = "id, title, category, level, hours, rating, instructor";
+  const baseColumns =
+    "id, title, category, track, level, hours, rating, instructor";
   const columnsWithActive = `${baseColumns}, is_active`;
 
   const { data, error } = await supabaseClient
@@ -132,10 +137,20 @@ export async function loadCourses() {
   let courses = data ?? [];
 
   if (error) {
-    if (isColumnMissingError(error, "is_active")) {
+    const missingIsActive = isColumnMissingError(error, "is_active");
+    const missingTrack = isColumnMissingError(error, "track");
+
+    if (missingIsActive || missingTrack) {
+      const fallbackColumns = missingTrack
+        ? "id, title, category, level, hours, rating, instructor"
+        : baseColumns;
+      const fallbackSelect = missingIsActive
+        ? fallbackColumns
+        : `${fallbackColumns}, is_active`;
+
       const fallback = await supabaseClient
         .from("courses")
-        .select(baseColumns)
+        .select(fallbackSelect)
         .order("id", { ascending: true });
 
       if (fallback.error) {
@@ -336,6 +351,10 @@ let adminEnrollmentsBody = null;
 let adminCourseFilter = null;
 let adminStatusFilter = null;
 let adminEmptyState = null;
+let adminCourseForm = null;
+let adminCourseSubmitButton = null;
+let adminCourseFeedback = null;
+let adminCourseListBody = null;
 let adminCoursesCache = [];
 let adminEnrollmentsCache = [];
 let adminProfilesCache = [];
@@ -2963,8 +2982,10 @@ async function initializeAdminPanel() {
         .order("created_at", { ascending: false }),
       supabaseClient
         .from("courses")
-        .select("id, title")
-        .order("title", { ascending: true }),
+        .select(
+          "id, title, category, track, level, hours, rating, instructor, is_active"
+        )
+        .order("id", { ascending: true }),
     ]);
 
     if (profilesRes.error) throw profilesRes.error;
@@ -2976,6 +2997,7 @@ async function initializeAdminPanel() {
     adminCoursesCache = coursesRes.data ?? [];
 
     renderAdminUsers(adminProfilesCache);
+    renderAdminCourses();
     populateAdminCourseFilter();
     renderAdminEnrollments();
   } catch (error) {
@@ -2984,6 +3006,264 @@ async function initializeAdminPanel() {
       adminMessageEl.innerHTML =
         '<p class="empty-state">Gagal memuat data admin.</p>';
     }
+  }
+}
+
+function formatCourseTrackLabel(track) {
+  if (!track) {
+    return "-";
+  }
+
+  const normalized = track.toString().trim().toUpperCase();
+  if (normalized === "IPA" || normalized === "IPS") {
+    return `Jurusan ${normalized}`;
+  }
+
+  return track;
+}
+
+function setAdminCourseFeedback(message, state = "info") {
+  if (!adminCourseFeedback) {
+    return;
+  }
+
+  adminCourseFeedback.textContent = message ?? "";
+  adminCourseFeedback.classList.remove("is-error", "is-success");
+
+  if (!message) {
+    return;
+  }
+
+  if (state === "error") {
+    adminCourseFeedback.classList.add("is-error");
+  } else if (state === "success") {
+    adminCourseFeedback.classList.add("is-success");
+  }
+}
+
+function setAdminCourseFormLoading(isLoading) {
+  if (!adminCourseSubmitButton) {
+    return;
+  }
+
+  adminCourseSubmitButton.disabled = Boolean(isLoading);
+  adminCourseSubmitButton.textContent = isLoading
+    ? "Menyimpan..."
+    : "Simpan Kursus";
+}
+
+function renderAdminCourses() {
+  if (!adminCourseListBody) {
+    return;
+  }
+
+  adminCourseListBody.innerHTML = "";
+
+  if (!adminCoursesCache.length) {
+    const emptyRow = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 8;
+    cell.className = "empty-state";
+    cell.textContent = "Belum ada kursus yang terdaftar.";
+    emptyRow.appendChild(cell);
+    adminCourseListBody.appendChild(emptyRow);
+    return;
+  }
+
+  const sortedCourses = [...adminCoursesCache].sort((a, b) => {
+    const titleA = (a.title ?? "").toLowerCase();
+    const titleB = (b.title ?? "").toLowerCase();
+    return titleA.localeCompare(titleB, "id");
+  });
+
+  sortedCourses.forEach((course) => {
+    const row = document.createElement("tr");
+    const ratingValue =
+      typeof course.rating === "number"
+        ? course.rating
+        : course.rating
+        ? Number.parseFloat(course.rating)
+        : null;
+    const ratingLabel =
+      Number.isFinite(ratingValue) && !Number.isNaN(ratingValue)
+        ? ratingValue.toFixed(1)
+        : "-";
+    const hasHours =
+      typeof course.hours === "number" && !Number.isNaN(course.hours);
+    const durationLabel = hasHours ? formatHours(course.hours) : "-";
+
+    row.innerHTML = `
+      <td>${course.title ?? ""}</td>
+      <td>${formatCourseTrackLabel(course.track)}</td>
+      <td>${course.category ?? "-"}</td>
+      <td>${course.level ?? "-"}</td>
+      <td>${durationLabel}</td>
+      <td>${ratingLabel}</td>
+      <td>${course.instructor ?? "-"}</td>
+    `;
+
+    const actionCell = document.createElement("td");
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "btn secondary small";
+    deleteButton.textContent = "Hapus";
+    deleteButton.addEventListener("click", () => {
+      handleAdminDeleteCourse(course.id, deleteButton);
+    });
+
+    actionCell.appendChild(deleteButton);
+    row.appendChild(actionCell);
+
+    adminCourseListBody.appendChild(row);
+  });
+}
+
+async function handleAdminCourseFormSubmit(event) {
+  event.preventDefault();
+
+  if (!adminCourseForm) {
+    return;
+  }
+
+  const formData = new FormData(adminCourseForm);
+  const title = (formData.get("title") ?? "").toString().trim();
+  const track = (formData.get("track") ?? "").toString().trim().toUpperCase();
+  const category = (formData.get("category") ?? "").toString().trim();
+  const level = (formData.get("level") ?? "").toString().trim();
+  const hoursRaw = formData.get("hours");
+  const ratingRaw = formData.get("rating");
+  const instructor = (formData.get("instructor") ?? "").toString().trim();
+
+  if (!title || !track) {
+    setAdminCourseFeedback(
+      "Judul dan rumpun kursus wajib diisi sebelum menyimpan.",
+      "error"
+    );
+    return;
+  }
+
+  const hoursValue = hoursRaw === null || hoursRaw === ""
+    ? null
+    : Number.parseInt(hoursRaw, 10);
+  const ratingValue = ratingRaw === null || ratingRaw === ""
+    ? null
+    : Number.parseFloat(ratingRaw);
+
+  const payload = {
+    title,
+    track,
+    category: category || null,
+    level: level || null,
+    hours: Number.isFinite(hoursValue) ? hoursValue : null,
+    rating: Number.isFinite(ratingValue) ? Number(ratingValue.toFixed(1)) : null,
+    instructor: instructor || null,
+  };
+
+  if (!supabaseClient) {
+    setAdminCourseFeedback(
+      "Layanan database belum siap. Muat ulang halaman dan coba lagi.",
+      "error"
+    );
+    return;
+  }
+
+  try {
+    setAdminCourseFormLoading(true);
+    setAdminCourseFeedback("Menyimpan kursus baru...");
+
+    const { data, error } = await supabaseClient
+      .from("courses")
+      .insert(payload)
+      .select(
+        "id, title, category, track, level, hours, rating, instructor, is_active"
+      )
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    adminCoursesCache = [...adminCoursesCache, data];
+    renderAdminCourses();
+    populateAdminCourseFilter();
+
+    setAdminCourseFeedback("Kursus berhasil ditambahkan.", "success");
+    adminCourseForm.reset();
+  } catch (error) {
+    console.error(error);
+    setAdminCourseFeedback(
+      "Gagal menyimpan kursus. Silakan coba lagi.",
+      "error"
+    );
+  } finally {
+    setAdminCourseFormLoading(false);
+  }
+}
+
+async function handleAdminDeleteCourse(courseId, button) {
+  if (!courseId) {
+    return;
+  }
+
+  const confirmed = window.confirm(
+    "Hapus kursus ini? Semua pendaftaran terkait juga akan dihapus."
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  if (!supabaseClient) {
+    setAdminCourseFeedback(
+      "Layanan database belum siap. Muat ulang halaman dan coba lagi.",
+      "error"
+    );
+    if (button) {
+      button.disabled = false;
+      button.textContent = "Hapus";
+    }
+    return;
+  }
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Menghapus...";
+  }
+
+  try {
+    const { error } = await supabaseClient
+      .from("courses")
+      .delete()
+      .eq("id", courseId);
+
+    if (error) {
+      throw error;
+    }
+
+    adminCoursesCache = adminCoursesCache.filter(
+      (course) => course.id !== courseId
+    );
+    adminEnrollmentsCache = adminEnrollmentsCache.filter(
+      (enrollment) => enrollment.course_id !== courseId
+    );
+
+    renderAdminCourses();
+    populateAdminCourseFilter();
+    renderAdminEnrollments();
+    setAdminCourseFeedback("Kursus berhasil dihapus.", "success");
+  } catch (error) {
+    console.error(error);
+    setAdminCourseFeedback(
+      "Gagal menghapus kursus. Silakan coba lagi.",
+      "error"
+    );
+
+    if (button) {
+      button.disabled = false;
+      button.textContent = "Hapus";
+    }
+
+    return;
   }
 }
 
@@ -2998,7 +3278,13 @@ function populateAdminCourseFilter() {
   defaultOption.textContent = "Semua Kursus";
   adminCourseFilter.appendChild(defaultOption);
 
-  adminCoursesCache.forEach((course) => {
+  const sorted = [...adminCoursesCache].sort((a, b) => {
+    const titleA = (a.title ?? "").toLowerCase();
+    const titleB = (b.title ?? "").toLowerCase();
+    return titleA.localeCompare(titleB, "id");
+  });
+
+  sorted.forEach((course) => {
     const option = document.createElement("option");
     option.value = String(course.id);
     option.textContent = course.title;
@@ -3164,6 +3450,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   adminMessageEl = document.getElementById("admin-message");
   adminUsersBody = document.querySelector("#admin-users tbody");
   adminEnrollmentsBody = document.querySelector("#admin-enrollments tbody");
+  adminCourseForm = document.getElementById("admin-course-form");
+  adminCourseSubmitButton = document.getElementById("admin-course-submit");
+  adminCourseFeedback = document.getElementById("admin-course-feedback");
+  adminCourseListBody = document.querySelector("#admin-course-list tbody");
   adminCourseFilter = document.getElementById("admin-filter-course");
   adminStatusFilter = document.getElementById("admin-filter-status");
   adminEmptyState = document.getElementById("admin-empty-state");
@@ -3187,6 +3477,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   await sessionPromise;
 
+  if (adminCourseForm) {
+    adminCourseForm.addEventListener("submit", handleAdminCourseFormSubmit);
+  }
   if (adminCourseFilter) {
     adminCourseFilter.addEventListener("change", renderAdminEnrollments);
   }

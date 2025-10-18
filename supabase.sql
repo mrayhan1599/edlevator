@@ -78,6 +78,7 @@ CREATE TABLE IF NOT EXISTS courses (
   id bigserial PRIMARY KEY,
   title text NOT NULL,
   category text,
+  track text,
   level text,
   hours int,
   rating numeric(2,1),
@@ -87,6 +88,9 @@ CREATE TABLE IF NOT EXISTS courses (
 
 ALTER TABLE courses
   ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true;
+
+ALTER TABLE courses
+  ADD COLUMN IF NOT EXISTS track text;
 
 CREATE TABLE IF NOT EXISTS enrollments (
   id bigserial PRIMARY KEY,
@@ -286,19 +290,57 @@ BEGIN
   END IF;
 END $$;
 
--- Data awal kursus hanya dimasukkan jika tabel masih kosong
-INSERT INTO courses (title, category, level, hours, rating, instructor)
-SELECT title, category, level, hours, rating, instructor
-FROM (
-  VALUES
-    ('Dasar Pemrograman Web', 'Teknik Informatika', 'Pemula', 24, 4.8, 'Dr. Sinta Wardhani'),
-    ('Manajemen Proyek Digital', 'Manajemen Bisnis', 'Menengah', 18, 4.6, 'Bima Adi, M.M.'),
-    ('Psikologi Komunikasi Massa', 'Psikologi', 'Lanjutan', 20, 4.9, 'Dr. Rani Kartika'),
-    ('Branding Visual untuk Startup', 'Desain Komunikasi Visual', 'Menengah', 16, 4.7, 'Aditia Permana, S.Ds.'),
-    ('Analisis Data Bisnis', 'Manajemen Bisnis', 'Lanjutan', 22, 4.5, 'Fadhil Ramadhan, M.BA'),
-    ('UI/UX Research Fundamentals', 'Desain Komunikasi Visual', 'Pemula', 14, 4.4, 'Natasya Lingga, M.Ds.')
-) AS seed(title, category, level, hours, rating, instructor)
-WHERE NOT EXISTS (SELECT 1 FROM courses);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'courses'
+      AND policyname = 'admin insert courses'
+  ) THEN
+    CREATE POLICY "admin insert courses" ON courses
+      FOR INSERT WITH CHECK (public.is_admin(auth.uid()));
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'courses'
+      AND policyname = 'admin delete courses'
+  ) THEN
+    CREATE POLICY "admin delete courses" ON courses
+      FOR DELETE USING (public.is_admin(auth.uid()));
+  END IF;
+END $$;
+
+-- Hapus data kursus contoh agar daftar "Kursus Saya" hanya berisi kursus terdaftar pengguna
+DELETE FROM courses
+WHERE title IN (
+  'Dasar Pemrograman Web',
+  'Manajemen Proyek Digital',
+  'Psikologi Komunikasi Massa',
+  'Branding Visual untuk Startup',
+  'Analisis Data Bisnis',
+  'UI/UX Research Fundamentals'
+);
+
+-- Pastikan kursus Teknik Pertambangan tersedia sebagai referensi utama platform
+INSERT INTO courses (title, category, track, level, hours, rating, instructor, is_active)
+SELECT
+  'Teknik Pertambangan',
+  'Teknik & Teknologi',
+  'IPA',
+  'Pemula',
+  24,
+  4.7,
+  'Tim Mentor Edlevator',
+  true
+WHERE NOT EXISTS (
+  SELECT 1 FROM courses WHERE title = 'Teknik Pertambangan'
+);
 
 -- Bucket penyimpanan avatar (dibuat hanya jika belum ada)
 DO $$

@@ -504,6 +504,11 @@ footer {
     box-shadow: var(--shadow);
 }
 
+.thankyou-icon {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+}
+
 .thankyou h1 {
     margin-bottom: 1rem;
     font-size: 2rem;
@@ -512,6 +517,17 @@ footer {
 .thankyou p {
     color: var(--text-light);
     margin-bottom: 2rem;
+}
+
+.thankyou-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.thankyou-actions .btn {
+    min-width: 160px;
 }
 
 @media (max-width: 900px) {

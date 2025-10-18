@@ -24,9 +24,13 @@
 
     <main>
         <section class="thankyou">
-            <h1>Pendaftaran Berhasil!</h1>
+            <div class="thankyou-icon" aria-hidden="true">🎉</div>
+            <h1>Terima Kasih Telah Mendaftar!</h1>
             <p id="email-confirmation-message">Periksa email kamu untuk mengkonfirmasi akun sebelum login.</p>
-            <a href="index.html" class="btn">Kembali ke Beranda</a>
+            <div class="thankyou-actions">
+                <a href="index.html" class="btn">Kembali ke Beranda</a>
+                <a href="login.html" class="btn secondary">Masuk</a>
+            </div>
         </section>
     </main>
 
@@ -39,13 +43,19 @@
         const messageEl = document.getElementById("email-confirmation-message");
         const params = new URLSearchParams(window.location.search);
         const email = params.get("email");
+        const status = params.get("status");
 
         if (messageEl) {
+            if (status === "active") {
+                messageEl.textContent = "Akun kamu sudah aktif dan siap digunakan. Kamu bisa langsung masuk menggunakan email dan password yang baru dibuat.";
+                return;
+            }
+
             if (email) {
                 const escapedEmail = email.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                messageEl.innerHTML = `Pendaftaran berhasil! Periksa email <strong>${escapedEmail}</strong> untuk mengkonfirmasi akun sebelum login.`;
+                messageEl.innerHTML = `Kami telah mengirim tautan verifikasi ke <strong>${escapedEmail}</strong>. Silakan cek email dan ikuti petunjuk untuk mengaktifkan akunmu.`;
             } else {
-                messageEl.textContent = "Pendaftaran berhasil! Periksa email kamu untuk mengkonfirmasi akun sebelum login.";
+                messageEl.textContent = "Kami telah mengirim tautan verifikasi ke email kamu. Silakan cek inbox dan ikuti petunjuk untuk mengaktifkan akunmu.";
             }
         }
     </script>

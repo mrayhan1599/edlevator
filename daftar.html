@@ -86,8 +86,17 @@
                 submitButton.textContent = "Mendaftarkan...";
                 setFeedback("", "");
 
-                await signUp(email, password, fullName);
-                window.location.href = "dashboard.html";
+                const result = await signUp(email, password, fullName);
+
+                if (result?.requiresEmailConfirmation) {
+                    setFeedback(
+                        "Pendaftaran berhasil! Periksa email kamu untuk mengkonfirmasi akun sebelum login.",
+                        "success"
+                    );
+                    form.reset();
+                } else {
+                    window.location.href = "dashboard.html";
+                }
             } catch (error) {
                 console.error(error);
                 const message = error?.message ?? "Pendaftaran gagal. Coba lagi.";

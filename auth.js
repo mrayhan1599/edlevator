@@ -15,12 +15,40 @@ function ensureClient() {
   return supabaseClient;
 }
 
+async function ensureProfileRecord({ client, userId, fullName, role }) {
+  if (!userId) {
+    return;
+  }
+
+  const payload = { id: userId };
+  if (typeof fullName === "string" && fullName.trim() !== "") {
+    payload.full_name = fullName.trim();
+  }
+  if (typeof role === "string" && role.trim() !== "") {
+    payload.role = role.trim();
+  }
+
+  const { error } = await client
+    .from("profiles")
+    .upsert(payload, { onConflict: "id" });
+
+  if (error) {
+    throw error;
+  }
+}
+
 export async function signUp(email, password, fullName) {
   const client = ensureClient();
 
   const { data, error } = await client.auth.signUp({
     email,
     password,
+    options: {
+      data: {
+        full_name: fullName,
+        role: "user",
+      },
+    },
   });
 
   if (error) {
@@ -33,22 +61,35 @@ export async function signUp(email, password, fullName) {
     throw new Error("Pendaftaran berhasil namun pengguna tidak ditemukan.");
   }
 
-  const { error: profileError } = await client
-    .from("profiles")
-    .upsert(
-      {
-        id: user.id,
-        full_name: fullName,
-        role: "user",
-      },
-      { onConflict: "id" }
-    );
+  const { data: sessionData, error: sessionError } = await client.auth.getSession();
 
-  if (profileError) {
-    throw profileError;
+  if (sessionError) {
+    throw sessionError;
   }
 
-  return { user, session: data.session };
+  const session = sessionData?.session ?? data.session ?? null;
+
+  if (session) {
+    try {
+      await ensureProfileRecord({
+        client,
+        userId: user.id,
+        fullName,
+        role: "user",
+      });
+    } catch (profileError) {
+      console.error(profileError);
+      throw new Error(
+        "Pendaftaran berhasil, tetapi kami gagal menyiapkan profilmu. Silakan coba login ulang."
+      );
+    }
+  }
+
+  return {
+    user,
+    session,
+    requiresEmailConfirmation: !session,
+  };
 }
 
 export async function signIn(email, password) {
@@ -61,6 +102,23 @@ export async function signIn(email, password) {
 
   if (error) {
     throw error;
+  }
+
+  const user = data?.user;
+
+  if (user) {
+    const fullName = user.user_metadata?.full_name;
+    const role = user.user_metadata?.role;
+
+    await ensureProfileRecord({
+      client,
+      userId: user.id,
+      fullName,
+      role,
+    }).catch((profileError) => {
+      console.error(profileError);
+      throw new Error("Gagal memastikan profil pengguna. Coba lagi nanti.");
+    });
   }
 
   return data;

@@ -161,6 +161,7 @@ let cachedProfile = null;
 let cachedProfileDetails = null;
 let cachedAvatarDataUrl = null;
 let profileDetailsSupported = true;
+let profilesTableSupported = true;
 let courseCache = [];
 let cachedEnrollments = [];
 let enrollmentsContainer = null;
@@ -353,6 +354,25 @@ function getCurrentProfileData() {
     avatarStoragePath:
       details.avatarStoragePath ?? metadata.avatar_storage_path ?? null,
   };
+}
+
+function isProfilesWriteUnsupportedError(error) {
+  if (!error) {
+    return false;
+  }
+
+  const code = error.code;
+  if (code === "42P01" || code === "42501") {
+    return true;
+  }
+
+  const message = (error.message ?? "").toLowerCase();
+  return (
+    message.includes("row level security") ||
+    message.includes("permission denied") ||
+    message.includes("relation \"profiles\"") ||
+    message.includes("table \"profiles\"")
+  );
 }
 
 function isProfileDetailsUnsupportedError(error) {
@@ -1048,6 +1068,9 @@ async function updateSession() {
     cachedProfile = cachedSession
       ? await getUserProfile(cachedSession.user.id).catch((error) => {
           console.error(error);
+          if (isProfilesWriteUnsupportedError(error)) {
+            profilesTableSupported = false;
+          }
           return null;
         })
       : null;
@@ -1059,6 +1082,7 @@ async function updateSession() {
       cachedAvatarDataUrl = null;
       cachedAvatarStoragePath = null;
       profileDetailsSupported = true;
+      profilesTableSupported = true;
     }
   } catch (error) {
     console.error(error);
@@ -1067,6 +1091,7 @@ async function updateSession() {
     cachedProfileDetails = null;
     cachedAvatarDataUrl = null;
     cachedAvatarStoragePath = null;
+    profilesTableSupported = true;
   }
 
   renderNavbar();
@@ -1236,12 +1261,22 @@ async function saveProfileDetailsToDatabase(data) {
     avatar_storage_path: cachedAvatarStoragePath ?? null,
   };
 
-  const { error: profileError } = await supabaseClient
-    .from("profiles")
-    .upsert(profilePayload, { onConflict: "id" });
+  let profileSaved = false;
 
-  if (profileError) {
-    throw profileError;
+  if (profilesTableSupported) {
+    const { error: profileError } = await supabaseClient
+      .from("profiles")
+      .upsert(profilePayload, { onConflict: "id" });
+
+    if (profileError) {
+      if (isProfilesWriteUnsupportedError(profileError)) {
+        profilesTableSupported = false;
+      } else {
+        throw profileError;
+      }
+    } else {
+      profileSaved = true;
+    }
   }
 
   let detailsSaved = false;
@@ -1262,7 +1297,7 @@ async function saveProfileDetailsToDatabase(data) {
     }
   }
 
-  if (!detailsSaved) {
+  if (!detailsSaved || !profileSaved) {
     await persistProfileMetadata(
       data,
       cachedAvatarDataUrl,
@@ -1278,9 +1313,16 @@ async function saveProfileDetailsToDatabase(data) {
     });
   }
 
-  cachedProfile = cachedProfile
-    ? { ...cachedProfile, full_name: profilePayload.full_name }
-    : { id: userId, full_name: profilePayload.full_name };
+  if (profileSaved) {
+    cachedProfile = cachedProfile
+      ? { ...cachedProfile, full_name: profilePayload.full_name }
+      : { id: userId, full_name: profilePayload.full_name };
+  } else {
+    cachedProfile = {
+      id: userId,
+      full_name: profilePayload.full_name,
+    };
+  }
   cachedProfileDetails = {
     ...data,
     avatarDataUrl: cachedAvatarDataUrl ?? null,

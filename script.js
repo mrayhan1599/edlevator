@@ -944,19 +944,27 @@ function renderNavbar() {
     initialsSpan.textContent = initials;
     avatarVisual.appendChild(initialsSpan);
 
-    if (cachedAvatarDataUrl) {
+    const normalizedAvatarUrl = cachedAvatarDataUrl
+      ? withAvatarCacheBusting(cachedAvatarDataUrl)
+      : null;
+
+    if (normalizedAvatarUrl) {
+      avatarVisual.style.backgroundImage = `url("${normalizedAvatarUrl}")`;
+
       const avatarImage = document.createElement("img");
-      avatarImage.src = withAvatarCacheBusting(cachedAvatarDataUrl);
+      avatarImage.src = normalizedAvatarUrl;
       avatarImage.alt = `Foto profil ${displayName}`;
       avatarImage.loading = "lazy";
       avatarImage.decoding = "async";
       avatarImage.addEventListener("error", () => {
         avatarImage.remove();
         avatarVisual.classList.remove("has-image");
+        avatarVisual.style.backgroundImage = "";
       });
       avatarVisual.appendChild(avatarImage);
       avatarVisual.classList.add("has-image");
     } else {
+      avatarVisual.style.backgroundImage = "";
       avatarVisual.classList.remove("has-image");
     }
   }

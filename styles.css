@@ -1142,6 +1142,113 @@ footer {
     gap: 0.5rem;
 }
 
+.program-subtracks {
+    background: rgba(79, 70, 229, 0.08);
+    border-radius: 16px;
+    padding: 1.25rem;
+    display: grid;
+    gap: 1.5rem;
+}
+
+.subtrack h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--primary);
+}
+
+.subtrack-description {
+    margin: 0.25rem 0 0.75rem;
+    color: var(--text-light);
+    font-size: 0.95rem;
+}
+
+.semester-list {
+    display: grid;
+    gap: 1rem;
+}
+
+.semester-item {
+    border-radius: 14px;
+    border: 1px solid rgba(79, 70, 229, 0.16);
+    background: var(--card);
+    padding: 1rem 1.25rem;
+}
+
+.semester-item summary {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--primary);
+    list-style: none;
+}
+
+.semester-item summary:focus-visible {
+    outline: 2px solid var(--secondary);
+    border-radius: 8px;
+    outline-offset: 4px;
+}
+
+.semester-item summary::-webkit-details-marker {
+    display: none;
+}
+
+.semester-item[open] summary {
+    margin-bottom: 0.75rem;
+}
+
+.semester-label {
+    font-size: 1rem;
+}
+
+.semester-overview {
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: var(--text-light);
+}
+
+.semester-section {
+    display: grid;
+    gap: 0.5rem;
+    color: var(--text-light);
+}
+
+.semester-section h6 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--primary);
+}
+
+.semester-courses {
+    margin: 0;
+    padding-left: 1.25rem;
+    display: grid;
+    gap: 0.35rem;
+}
+
+.semester-video .responsive-video {
+    margin-top: 0.25rem;
+}
+
+.responsive-video {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%;
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.responsive-video iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
 .chip {
     display: inline-flex;
     padding: 0.45rem 0.9rem;

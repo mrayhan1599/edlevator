@@ -15,9 +15,28 @@ function ensureClient() {
   return supabaseClient;
 }
 
+function isProfilesWriteUnsupportedError(error) {
+  if (!error) {
+    return false;
+  }
+
+  const code = error.code;
+  if (code === "42P01" || code === "42501") {
+    return true;
+  }
+
+  const message = (error.message ?? "").toLowerCase();
+  return (
+    message.includes("row level security") ||
+    message.includes("permission denied") ||
+    message.includes("relation \"profiles\"") ||
+    message.includes("table \"profiles\"")
+  );
+}
+
 async function ensureProfileRecord({ client, userId, fullName, role }) {
   if (!userId) {
-    return;
+    return { created: false };
   }
 
   const payload = { id: userId };
@@ -28,12 +47,46 @@ async function ensureProfileRecord({ client, userId, fullName, role }) {
     payload.role = role.trim();
   }
 
-  const { error } = await client
-    .from("profiles")
-    .upsert(payload, { onConflict: "id" });
+  try {
+    const { error } = await client
+      .from("profiles")
+      .upsert(payload, { onConflict: "id" });
 
-  if (error) {
-    throw error;
+    if (error) {
+      throw error;
+    }
+
+    return { created: true };
+  } catch (error) {
+    if (!isProfilesWriteUnsupportedError(error)) {
+      throw error;
+    }
+
+    console.warn(
+      "Tabel atau kebijakan profiles tidak tersedia. Menggunakan metadata pengguna.",
+      error
+    );
+
+    const metadataPayload = {};
+    if (typeof payload.full_name === "string") {
+      metadataPayload.full_name = payload.full_name;
+    }
+    if (typeof payload.role === "string") {
+      metadataPayload.role = payload.role;
+    }
+
+    if (Object.keys(metadataPayload).length > 0) {
+      await client.auth
+        .updateUser({ data: metadataPayload })
+        .catch((metadataError) => {
+          console.warn(
+            "Gagal memperbarui metadata pengguna sebagai cadangan",
+            metadataError
+          );
+        });
+    }
+
+    return { created: false, metadataSynced: true };
   }
 }
 

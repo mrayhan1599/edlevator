@@ -41,7 +41,7 @@
 
             <div class="stats-grid" aria-label="Statistik ringkas">
                 <article class="stat-card">
-                    <h3>Total Kursus</h3>
+                    <h3>Total Kursus Terdaftar</h3>
                     <p id="stat-total-course">0</p>
                 </article>
                 <article class="stat-card">
@@ -49,10 +49,117 @@
                     <p id="stat-total-hours">0</p>
                 </article>
                 <article class="stat-card">
-                    <h3>Rata-rata Rating</h3>
-                    <p id="stat-average-rating">0</p>
+                    <h3>Rata-rata Nilai</h3>
+                    <p id="stat-average-score">0</p>
                 </article>
             </div>
+
+            <section class="dashboard-section" id="profil" aria-labelledby="profile-heading">
+                <div class="section-header">
+                    <h2 id="profile-heading">Profil Pembelajar</h2>
+                    <p>Perbarui data pribadi dan preferensi belajarmu agar rekomendasi kursus lebih akurat.</p>
+                </div>
+
+                <div class="profile-grid">
+                    <form id="avatar-form" class="profile-card" aria-describedby="avatar-feedback">
+                        <h3>Ubah Foto Profil</h3>
+                        <p class="profile-helper">Unggah foto terbaru agar mentor dan teman belajarmu lebih mudah mengenalimu.</p>
+                        <div class="avatar-preview" id="avatar-preview" aria-live="polite">Inisial</div>
+                        <label class="file-input">
+                            <span>Pilih gambar (PNG atau JPG)</span>
+                            <input type="file" id="avatar-input" accept="image/png, image/jpeg" aria-label="Unggah foto profil">
+                        </label>
+                        <div class="form-actions">
+                            <button type="submit" class="btn secondary">Simpan Foto</button>
+                        </div>
+                        <p class="form-feedback" id="avatar-feedback" role="status" aria-live="polite"></p>
+                    </form>
+
+                    <form id="password-form" class="profile-card" aria-describedby="password-feedback">
+                        <h3>Ganti Kata Sandi</h3>
+                        <p class="profile-helper">Pastikan kata sandi baru memiliki minimal 8 karakter untuk keamanan optimal.</p>
+                        <div class="form-group">
+                            <label for="new-password">Kata Sandi Baru</label>
+                            <input type="password" id="new-password" name="new-password" minlength="8" autocomplete="new-password" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirm-password">Konfirmasi Kata Sandi Baru</label>
+                            <input type="password" id="confirm-password" name="confirm-password" minlength="8" autocomplete="new-password" required>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn secondary">Perbarui Kata Sandi</button>
+                        </div>
+                        <p class="form-feedback" id="password-feedback" role="status" aria-live="polite"></p>
+                    </form>
+
+                    <form id="profile-info-form" class="profile-card" aria-describedby="profile-info-feedback">
+                        <h3>Informasi Personal</h3>
+                        <div class="inline-inputs">
+                            <div class="form-group">
+                                <label for="profile-full-name">Nama Lengkap</label>
+                                <input type="text" id="profile-full-name" name="full-name" autocomplete="name">
+                            </div>
+                            <div class="form-group">
+                                <label for="profile-email">Email</label>
+                                <input type="email" id="profile-email" name="email" autocomplete="email" disabled>
+                            </div>
+                        </div>
+                        <div class="inline-inputs">
+                            <div class="form-group">
+                                <label for="profile-birthdate">Tanggal Lahir</label>
+                                <input type="date" id="profile-birthdate" name="birthdate" autocomplete="bday">
+                            </div>
+                            <div class="form-group">
+                                <label for="profile-gender">Jenis Kelamin</label>
+                                <select id="profile-gender" name="gender">
+                                    <option value="">Pilih</option>
+                                    <option value="female">Perempuan</option>
+                                    <option value="male">Laki-laki</option>
+                                    <option value="nonbinary">Non-biner</option>
+                                    <option value="prefer_not">Tidak ingin menyebutkan</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="inline-inputs">
+                            <div class="form-group">
+                                <label for="profile-track">Minat Belajar</label>
+                                <select id="profile-track" name="track">
+                                    <option value="">Pilih</option>
+                                    <option value="ipa">IPA</option>
+                                    <option value="ips">IPS</option>
+                                    <option value="campuran">Campuran</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="profile-major">Jurusan Kuliah</label>
+                                <input type="text" id="profile-major" name="major" placeholder="Contoh: Teknik Informatika">
+                            </div>
+                        </div>
+                        <div class="inline-inputs">
+                            <div class="form-group">
+                                <label for="profile-occupation">Pekerjaan</label>
+                                <input type="text" id="profile-occupation" name="occupation" placeholder="Contoh: Data Analyst">
+                            </div>
+                            <div class="form-group">
+                                <label for="profile-company">Institusi / Perusahaan</label>
+                                <input type="text" id="profile-company" name="company" placeholder="Contoh: PT Edukasi Nusantara">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="profile-location">Domisili</label>
+                            <input type="text" id="profile-location" name="location" placeholder="Contoh: Jakarta, Indonesia">
+                        </div>
+                        <div class="form-group">
+                            <label for="profile-bio">Bio Singkat</label>
+                            <textarea id="profile-bio" name="bio" rows="3" placeholder="Ceritakan fokus belajarmu saat ini"></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn">Simpan Profil</button>
+                        </div>
+                        <p class="form-feedback" id="profile-info-feedback" role="status" aria-live="polite"></p>
+                    </form>
+                </div>
+            </section>
 
             <div class="filters" aria-label="Filter pencarian kursus">
                 <input type="search" id="search-input" placeholder="Cari kursus, dosen, atau kata kunci" aria-label="Cari kursus">
@@ -76,6 +183,14 @@
                 <h2>Kursus Saya</h2>
                 <div id="my-enrollments" class="course-grid" aria-live="polite">
                     <!-- Pendaftaran kursus pengguna -->
+                </div>
+            </section>
+
+            <section class="dashboard-section" id="sertifikat">
+                <h2>Sertifikat</h2>
+                <p class="section-subtitle">Kumpulkan sertifikat dari kursus yang telah selesai dan bagikan ke LinkedIn untuk menonjolkan pencapaianmu.</p>
+                <div id="certificate-list" class="certificate-grid" aria-live="polite">
+                    <!-- Sertifikat pengguna -->
                 </div>
             </section>
         </section>

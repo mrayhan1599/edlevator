@@ -1,13 +1,13 @@
 -- Skema dan data awal untuk platform Edlevator
 
-CREATE TABLE profiles (
+CREATE TABLE IF NOT EXISTS profiles (
   id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   full_name text,
   role text DEFAULT 'user',
   created_at timestamp DEFAULT now()
 );
 
-CREATE TABLE profile_details (
+CREATE TABLE IF NOT EXISTS profile_details (
   user_id uuid PRIMARY KEY REFERENCES profiles(id) ON DELETE CASCADE,
   birthdate date,
   gender text,
@@ -22,13 +22,11 @@ CREATE TABLE profile_details (
   updated_at timestamp DEFAULT now()
 );
 
--- Helper function to evaluate admin privileges without triggering recursive
--- policy checks on the profiles table. SECURITY DEFINER allows this function
--- to read from profiles without being subject to row level security policies.
-CREATE TABLE admin_users (
+CREATE TABLE IF NOT EXISTS admin_users (
   user_id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE
 );
 
+-- Helper function to sinkronisasi data admin secara otomatis.
 CREATE OR REPLACE FUNCTION public.sync_admin_user()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -54,6 +52,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS sync_admin_user_trigger ON profiles;
 CREATE TRIGGER sync_admin_user_trigger
 AFTER INSERT OR UPDATE OR DELETE ON profiles
 FOR EACH ROW EXECUTE FUNCTION public.sync_admin_user();
@@ -75,7 +74,7 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.is_admin(uuid) TO authenticated, anon, service_role;
 
-CREATE TABLE courses (
+CREATE TABLE IF NOT EXISTS courses (
   id bigserial PRIMARY KEY,
   title text NOT NULL,
   category text,
@@ -85,7 +84,7 @@ CREATE TABLE courses (
   instructor text
 );
 
-CREATE TABLE enrollments (
+CREATE TABLE IF NOT EXISTS enrollments (
   id bigserial PRIMARY KEY,
   user_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
   course_id bigint REFERENCES courses(id) ON DELETE CASCADE,
@@ -96,54 +95,199 @@ CREATE TABLE enrollments (
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profile_details ENABLE ROW LEVEL SECURITY;
 ALTER TABLE enrollments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE courses ENABLE ROW LEVEL SECURITY;
 
 -- Kebijakan akses profiles
-CREATE POLICY "select own profile" ON profiles
-FOR SELECT USING (auth.uid() = id);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'profiles'
+      AND policyname = 'select own profile'
+  ) THEN
+    CREATE POLICY "select own profile" ON profiles
+      FOR SELECT USING (auth.uid() = id);
+  END IF;
+END $$;
 
-CREATE POLICY "update own profile" ON profiles
-FOR UPDATE USING (auth.uid() = id);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'profiles'
+      AND policyname = 'update own profile'
+  ) THEN
+    CREATE POLICY "update own profile" ON profiles
+      FOR UPDATE USING (auth.uid() = id);
+  END IF;
+END $$;
 
-CREATE POLICY "insert own profile" ON profiles
-FOR INSERT WITH CHECK (auth.uid() = id);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'profiles'
+      AND policyname = 'insert own profile'
+  ) THEN
+    CREATE POLICY "insert own profile" ON profiles
+      FOR INSERT WITH CHECK (auth.uid() = id);
+  END IF;
+END $$;
 
-CREATE POLICY "admin select all profiles" ON profiles
-FOR SELECT USING (public.is_admin(auth.uid()));
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'profiles'
+      AND policyname = 'admin select all profiles'
+  ) THEN
+    CREATE POLICY "admin select all profiles" ON profiles
+      FOR SELECT USING (public.is_admin(auth.uid()));
+  END IF;
+END $$;
 
 -- Kebijakan akses profile_details
-CREATE POLICY "select own profile details" ON profile_details
-FOR SELECT USING (auth.uid() = user_id);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'profile_details'
+      AND policyname = 'select own profile details'
+  ) THEN
+    CREATE POLICY "select own profile details" ON profile_details
+      FOR SELECT USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "insert own profile details" ON profile_details
-FOR INSERT WITH CHECK (auth.uid() = user_id);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'profile_details'
+      AND policyname = 'insert own profile details'
+  ) THEN
+    CREATE POLICY "insert own profile details" ON profile_details
+      FOR INSERT WITH CHECK (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "update own profile details" ON profile_details
-FOR UPDATE USING (auth.uid() = user_id);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'profile_details'
+      AND policyname = 'update own profile details'
+  ) THEN
+    CREATE POLICY "update own profile details" ON profile_details
+      FOR UPDATE USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "admin select profile details" ON profile_details
-FOR SELECT USING (public.is_admin(auth.uid()));
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'profile_details'
+      AND policyname = 'admin select profile details'
+  ) THEN
+    CREATE POLICY "admin select profile details" ON profile_details
+      FOR SELECT USING (public.is_admin(auth.uid()));
+  END IF;
+END $$;
 
 -- Kebijakan akses enrollments
-CREATE POLICY "user insert enrollment" ON enrollments
-FOR INSERT WITH CHECK (auth.uid() = user_id);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'enrollments'
+      AND policyname = 'user insert enrollment'
+  ) THEN
+    CREATE POLICY "user insert enrollment" ON enrollments
+      FOR INSERT WITH CHECK (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "user select own enrollment" ON enrollments
-FOR SELECT USING (auth.uid() = user_id);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'enrollments'
+      AND policyname = 'user select own enrollment'
+  ) THEN
+    CREATE POLICY "user select own enrollment" ON enrollments
+      FOR SELECT USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "admin select all enrollments" ON enrollments
-FOR SELECT USING (public.is_admin(auth.uid()));
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'enrollments'
+      AND policyname = 'admin select all enrollments'
+  ) THEN
+    CREATE POLICY "admin select all enrollments" ON enrollments
+      FOR SELECT USING (public.is_admin(auth.uid()));
+  END IF;
+END $$;
 
-CREATE POLICY "admin update enrollments" ON enrollments
-FOR UPDATE USING (public.is_admin(auth.uid()));
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'enrollments'
+      AND policyname = 'admin update enrollments'
+  ) THEN
+    CREATE POLICY "admin update enrollments" ON enrollments
+      FOR UPDATE USING (public.is_admin(auth.uid()));
+  END IF;
+END $$;
 
--- Data awal kursus
-INSERT INTO courses (title, category, level, hours, rating, instructor) VALUES
-  ('Dasar Pemrograman Web', 'Teknik Informatika', 'Pemula', 24, 4.8, 'Dr. Sinta Wardhani'),
-  ('Manajemen Proyek Digital', 'Manajemen Bisnis', 'Menengah', 18, 4.6, 'Bima Adi, M.M.'),
-  ('Psikologi Komunikasi Massa', 'Psikologi', 'Lanjutan', 20, 4.9, 'Dr. Rani Kartika'),
-  ('Branding Visual untuk Startup', 'Desain Komunikasi Visual', 'Menengah', 16, 4.7, 'Aditia Permana, S.Ds.'),
-  ('Analisis Data Bisnis', 'Manajemen Bisnis', 'Lanjutan', 22, 4.5, 'Fadhil Ramadhan, M.BA'),
-  ('UI/UX Research Fundamentals', 'Desain Komunikasi Visual', 'Pemula', 14, 4.4, 'Natasya Lingga, M.Ds.');
+-- Kebijakan akses courses
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'courses'
+      AND policyname = 'public select courses'
+  ) THEN
+    CREATE POLICY "public select courses" ON courses
+      FOR SELECT USING (true);
+  END IF;
+END $$;
+
+-- Data awal kursus hanya dimasukkan jika tabel masih kosong
+INSERT INTO courses (title, category, level, hours, rating, instructor)
+SELECT title, category, level, hours, rating, instructor
+FROM (
+  VALUES
+    ('Dasar Pemrograman Web', 'Teknik Informatika', 'Pemula', 24, 4.8, 'Dr. Sinta Wardhani'),
+    ('Manajemen Proyek Digital', 'Manajemen Bisnis', 'Menengah', 18, 4.6, 'Bima Adi, M.M.'),
+    ('Psikologi Komunikasi Massa', 'Psikologi', 'Lanjutan', 20, 4.9, 'Dr. Rani Kartika'),
+    ('Branding Visual untuk Startup', 'Desain Komunikasi Visual', 'Menengah', 16, 4.7, 'Aditia Permana, S.Ds.'),
+    ('Analisis Data Bisnis', 'Manajemen Bisnis', 'Lanjutan', 22, 4.5, 'Fadhil Ramadhan, M.BA'),
+    ('UI/UX Research Fundamentals', 'Desain Komunikasi Visual', 'Pemula', 14, 4.4, 'Natasya Lingga, M.Ds.')
+) AS seed(title, category, level, hours, rating, instructor)
+WHERE NOT EXISTS (SELECT 1 FROM courses);
 
 -- Bucket penyimpanan avatar (dibuat hanya jika belum ada)
 DO $$
@@ -166,7 +310,7 @@ BEGIN
       AND policyname = 'Avatar publik'
   ) THEN
     CREATE POLICY "Avatar publik" ON storage.objects
-    FOR SELECT USING (bucket_id = 'avatars');
+      FOR SELECT USING (bucket_id = 'avatars');
   END IF;
 END $$;
 
@@ -180,10 +324,10 @@ BEGIN
       AND policyname = 'Pengguna unggah avatar'
   ) THEN
     CREATE POLICY "Pengguna unggah avatar" ON storage.objects
-    FOR INSERT
-    WITH CHECK (
-      bucket_id = 'avatars' AND auth.role() = 'authenticated' AND auth.uid() = owner
-    );
+      FOR INSERT
+      WITH CHECK (
+        bucket_id = 'avatars' AND auth.role() = 'authenticated' AND auth.uid() = owner
+      );
   END IF;
 END $$;
 
@@ -197,12 +341,12 @@ BEGIN
       AND policyname = 'Pengguna ubah avatar'
   ) THEN
     CREATE POLICY "Pengguna ubah avatar" ON storage.objects
-    FOR UPDATE USING (
-      bucket_id = 'avatars' AND auth.uid() = owner
-    )
-    WITH CHECK (
-      bucket_id = 'avatars' AND auth.uid() = owner
-    );
+      FOR UPDATE USING (
+        bucket_id = 'avatars' AND auth.uid() = owner
+      )
+      WITH CHECK (
+        bucket_id = 'avatars' AND auth.uid() = owner
+      );
   END IF;
 END $$;
 
@@ -216,8 +360,8 @@ BEGIN
       AND policyname = 'Pengguna hapus avatar'
   ) THEN
     CREATE POLICY "Pengguna hapus avatar" ON storage.objects
-    FOR DELETE USING (
-      bucket_id = 'avatars' AND auth.uid() = owner
-    );
+      FOR DELETE USING (
+        bucket_id = 'avatars' AND auth.uid() = owner
+      );
   END IF;
 END $$;

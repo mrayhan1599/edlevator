@@ -381,19 +381,24 @@ async function getAvatarUrlFromStorage(path) {
   }
 
   try {
-    const { data } = supabaseClient.storage
-      .from(AVATAR_BUCKET)
-      .getPublicUrl(path);
+    const bucket = supabaseClient.storage.from(AVATAR_BUCKET);
 
-    if (data?.publicUrl) {
-      return data.publicUrl;
+    const { data: signedData } = await bucket.createSignedUrl(
+      path,
+      AVATAR_SIGNED_URL_DURATION
+    );
+
+    if (signedData?.signedUrl) {
+      return signedData.signedUrl;
     }
 
-    const { data: signedData } = await supabaseClient.storage
-      .from(AVATAR_BUCKET)
-      .createSignedUrl(path, AVATAR_SIGNED_URL_DURATION);
+    const { data: publicData } = bucket.getPublicUrl(path);
 
-    return signedData?.signedUrl ?? null;
+    if (publicData?.publicUrl) {
+      return publicData.publicUrl;
+    }
+
+    return null;
   } catch (error) {
     console.warn("Gagal membuat URL avatar dari storage", error);
     return null;
@@ -468,6 +473,15 @@ function withAvatarCacheBusting(url) {
   try {
     const trimmed = url.trim();
     const parsed = new URL(trimmed, window.location.origin);
+
+    // Signed URLs (e.g., from Supabase Storage) already contain security
+    // parameters such as `token`. Menambahkan parameter tambahan akan
+    // mengubah signature dan menyebabkan respons 401. Abaikan cache busting
+    // untuk URL bertoken tersebut.
+    if (parsed.searchParams.has("token")) {
+      return parsed.toString();
+    }
+
     const token = deriveAvatarCacheToken();
 
     if (token && !parsed.searchParams.has("v")) {
@@ -478,6 +492,49 @@ function withAvatarCacheBusting(url) {
   } catch (error) {
     return url;
   }
+}
+
+function renderAvatarElement(
+  element,
+  { initials = "", avatarUrl = null, altText = "" } = {}
+) {
+  if (!element) {
+    return;
+  }
+
+  element.innerHTML = "";
+
+  const initialsSpan = document.createElement("span");
+  initialsSpan.className = "avatar-initials";
+  const initialsText =
+    typeof initials === "string" && initials.trim() !== ""
+      ? initials.trim()
+      : "";
+  initialsSpan.textContent = initialsText;
+
+  if (element.getAttribute("aria-hidden") === "true") {
+    initialsSpan.setAttribute("aria-hidden", "true");
+  }
+
+  element.appendChild(initialsSpan);
+
+  if (typeof avatarUrl === "string" && avatarUrl.trim() !== "") {
+    const image = document.createElement("img");
+    image.src = avatarUrl.trim();
+    image.alt = altText || "";
+    image.loading = "lazy";
+    image.decoding = "async";
+    image.className = "avatar-image";
+    image.addEventListener("error", () => {
+      image.remove();
+      element.classList.remove("has-image");
+    });
+    element.appendChild(image);
+    element.classList.add("has-image");
+    return;
+  }
+
+  element.classList.remove("has-image");
 }
 
 async function seedProfileTablesFromMetadata(data = {}) {
@@ -898,7 +955,8 @@ function renderNavbar() {
   }
 
   const displayName = getUserDisplayName();
-  const initials = getUserInitials(displayName);
+  const initials =
+    getUserInitials(displayName) || displayName?.[0]?.toUpperCase() || "E";
 
   navAuthEl.innerHTML = `
     <div class="nav-profile">
@@ -923,28 +981,15 @@ function renderNavbar() {
 
   const avatarVisual = navAuthEl.querySelector(".avatar-visual");
   if (avatarVisual) {
-    avatarVisual.innerHTML = "";
+    const normalizedAvatarUrl = cachedAvatarDataUrl
+      ? withAvatarCacheBusting(cachedAvatarDataUrl)
+      : null;
 
-    const initialsSpan = document.createElement("span");
-    initialsSpan.className = "avatar-initials";
-    initialsSpan.textContent = initials;
-    avatarVisual.appendChild(initialsSpan);
-
-    if (cachedAvatarDataUrl) {
-      const avatarImage = document.createElement("img");
-      avatarImage.src = withAvatarCacheBusting(cachedAvatarDataUrl);
-      avatarImage.alt = `Foto profil ${displayName}`;
-      avatarImage.loading = "lazy";
-      avatarImage.decoding = "async";
-      avatarImage.addEventListener("error", () => {
-        avatarImage.remove();
-        avatarVisual.classList.remove("has-image");
-      });
-      avatarVisual.appendChild(avatarImage);
-      avatarVisual.classList.add("has-image");
-    } else {
-      avatarVisual.classList.remove("has-image");
-    }
+    renderAvatarElement(avatarVisual, {
+      initials,
+      avatarUrl: normalizedAvatarUrl,
+      altText: `Foto profil ${displayName}`,
+    });
   }
 
   setupNavProfileMenu();
@@ -1999,9 +2044,7 @@ function updateAvatarPreview() {
   }
 
   if (!cachedSession) {
-    avatarPreviewEl.style.backgroundImage = "";
-    avatarPreviewEl.classList.remove("has-image");
-    avatarPreviewEl.textContent = "E";
+    renderAvatarElement(avatarPreviewEl, { initials: "E" });
     avatarPreviewEl.setAttribute(
       "aria-label",
       "Pratinjau foto profil. Masuk untuk menambahkan foto."
@@ -2017,16 +2060,15 @@ function updateAvatarPreview() {
     `Foto profil ${name || "pengguna"}`
   );
 
-  if (cachedAvatarDataUrl) {
-    const previewUrl = withAvatarCacheBusting(cachedAvatarDataUrl);
-    avatarPreviewEl.style.backgroundImage = `url("${previewUrl}")`;
-    avatarPreviewEl.textContent = "";
-    avatarPreviewEl.classList.add("has-image");
-  } else {
-    avatarPreviewEl.style.backgroundImage = "";
-    avatarPreviewEl.textContent = initials;
-    avatarPreviewEl.classList.remove("has-image");
-  }
+  const previewUrl = cachedAvatarDataUrl
+    ? withAvatarCacheBusting(cachedAvatarDataUrl)
+    : null;
+
+  renderAvatarElement(avatarPreviewEl, {
+    initials,
+    avatarUrl: previewUrl,
+    altText: `Foto profil ${name || "pengguna"}`,
+  });
 }
 
 function setFeedbackMessage(element, message, isSuccess) {
@@ -2117,14 +2159,18 @@ function updateAvatarPreviewWithSelection() {
   }
 
   if (selectedAvatarDataUrl) {
-    avatarPreviewEl.style.backgroundImage = `url("${selectedAvatarDataUrl}")`;
-    avatarPreviewEl.textContent = "";
-    avatarPreviewEl.classList.add("has-image");
     const name = getUserDisplayName();
+    const initials =
+      getUserInitials(name) || name?.[0]?.toUpperCase() || "E";
     avatarPreviewEl.setAttribute(
       "aria-label",
       `Foto profil ${name || "pengguna"}`
     );
+    renderAvatarElement(avatarPreviewEl, {
+      initials,
+      avatarUrl: selectedAvatarDataUrl,
+      altText: `Foto profil ${name || "pengguna"}`,
+    });
   } else {
     updateAvatarPreview();
   }

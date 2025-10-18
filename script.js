@@ -6,7 +6,7 @@ import {
   onAuthStateChange,
 } from "./auth.js";
 
-const PROFILE_STORAGE_PREFIX = "edlevator:profile:";
+let navProfileCleanup = null;
 
 const SAMPLE_COURSES = [
   {
@@ -201,10 +201,139 @@ function formatDate(dateString) {
   });
 }
 
+function getUserDisplayName() {
+  return (
+    cachedProfileDetails?.fullName?.trim() ||
+    cachedProfile?.full_name ||
+    cachedSession?.user?.user_metadata?.full_name ||
+    cachedSession?.user?.email ||
+    "Pengguna"
+  );
+}
+
+function getUserInitials(name) {
+  return (
+    name
+      .split(" ")
+      .filter(Boolean)
+      .map((part) => part[0]?.toUpperCase() ?? "")
+      .slice(0, 2)
+      .join("") || "E"
+  );
+}
+
+function cleanupNavProfileMenu() {
+  if (typeof navProfileCleanup === "function") {
+    navProfileCleanup();
+    navProfileCleanup = null;
+  }
+}
+
+function setupNavProfileMenu() {
+  cleanupNavProfileMenu();
+
+  if (!navAuthEl) {
+    return;
+  }
+
+  const avatarButton = navAuthEl.querySelector("#nav-avatar-button");
+  const menu = navAuthEl.querySelector("#nav-profile-menu");
+  const logoutButton = navAuthEl.querySelector("#logout-button");
+
+  if (!avatarButton || !menu) {
+    return;
+  }
+
+  const closeMenu = () => {
+    if (!menu.hasAttribute("hidden")) {
+      menu.setAttribute("hidden", "");
+      avatarButton.setAttribute("aria-expanded", "false");
+    }
+  };
+
+  const openMenu = () => {
+    if (menu.hasAttribute("hidden")) {
+      menu.removeAttribute("hidden");
+      avatarButton.setAttribute("aria-expanded", "true");
+    }
+  };
+
+  const toggleMenu = () => {
+    if (menu.hasAttribute("hidden")) {
+      openMenu();
+    } else {
+      closeMenu();
+    }
+  };
+
+  const handleAvatarClick = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    toggleMenu();
+  };
+
+  const handleDocumentClick = (event) => {
+    if (
+      !menu.contains(event.target) &&
+      event.target !== avatarButton &&
+      !avatarButton.contains(event.target)
+    ) {
+      closeMenu();
+    }
+  };
+
+  const handleKeydown = (event) => {
+    if (event.key === "Escape") {
+      closeMenu();
+    }
+  };
+
+  const handleMenuItemClick = () => {
+    closeMenu();
+  };
+
+  avatarButton.addEventListener("click", handleAvatarClick);
+  document.addEventListener("click", handleDocumentClick);
+  document.addEventListener("keydown", handleKeydown);
+
+  Array.from(menu.querySelectorAll("a")).forEach((link) => {
+    link.addEventListener("click", handleMenuItemClick);
+  });
+
+  let logoutHandler = null;
+  if (logoutButton) {
+    logoutHandler = async () => {
+      try {
+        await signOut();
+        closeMenu();
+        await updateSession();
+      } catch (error) {
+        console.error(error);
+        alert("Gagal logout. Coba lagi.");
+      }
+    };
+    logoutButton.addEventListener("click", logoutHandler);
+  }
+
+  navProfileCleanup = () => {
+    avatarButton.removeEventListener("click", handleAvatarClick);
+    document.removeEventListener("click", handleDocumentClick);
+    document.removeEventListener("keydown", handleKeydown);
+    Array.from(menu.querySelectorAll("a")).forEach((link) => {
+      link.removeEventListener("click", handleMenuItemClick);
+    });
+    if (logoutButton && logoutHandler) {
+      logoutButton.removeEventListener("click", logoutHandler);
+    }
+  };
+}
+
 function renderNavbar() {
   if (!navAuthEl) {
     return;
   }
+
+  cleanupNavProfileMenu();
 
   if (!cachedSession) {
     navAuthEl.innerHTML = `
@@ -214,30 +343,37 @@ function renderNavbar() {
     return;
   }
 
-  const displayName =
-    cachedProfileDetails?.fullName?.trim() ||
-    cachedProfile?.full_name ||
-    cachedSession.user?.user_metadata?.full_name ||
-    cachedSession.user?.email ||
-    "Pengguna";
+  const displayName = getUserDisplayName();
+  const initials = getUserInitials(displayName);
 
   navAuthEl.innerHTML = `
-    <span class="nav-greeting">Halo, ${displayName}</span>
-    <button type="button" class="btn secondary" id="logout-button">Logout</button>
+    <div class="nav-profile">
+      <button type="button" class="avatar-button" id="nav-avatar-button" aria-haspopup="true" aria-expanded="false">
+        <span class="avatar-visual" aria-hidden="true">${initials}</span>
+        <span class="sr-only">Buka menu profil ${displayName}</span>
+      </button>
+      <div class="nav-dropdown" id="nav-profile-menu" hidden>
+        <div class="nav-user-name">${displayName}</div>
+        <a href="profile.html">Profil</a>
+        <a href="courses.html">Kursus Saya</a>
+        <a href="certificates.html">Sertifikat</a>
+        <button type="button" class="dropdown-logout" id="logout-button">Logout</button>
+      </div>
+    </div>
   `;
 
-  const logoutButton = navAuthEl.querySelector("#logout-button");
-  if (logoutButton) {
-    logoutButton.addEventListener("click", async () => {
-      try {
-        await signOut();
-        await updateSession();
-      } catch (error) {
-        console.error(error);
-        alert("Gagal logout. Coba lagi.");
-      }
-    });
+  const avatarVisual = navAuthEl.querySelector(".avatar-visual");
+  if (avatarVisual) {
+    if (cachedAvatarDataUrl) {
+      avatarVisual.style.backgroundImage = `url("${cachedAvatarDataUrl}")`;
+      avatarVisual.textContent = "";
+    } else {
+      avatarVisual.style.backgroundImage = "";
+      avatarVisual.textContent = initials;
+    }
   }
+
+  setupNavProfileMenu();
 }
 
 function updateDashboardAccess() {
@@ -390,43 +526,51 @@ async function initializeCourseFilters() {
 }
 
 async function refreshMyEnrollmentsUI() {
-  if (!enrollmentsContainer) {
-    return;
-  }
+  const hasContainer = Boolean(enrollmentsContainer);
 
-  enrollmentsContainer.innerHTML = "";
+  if (hasContainer) {
+    enrollmentsContainer.innerHTML = "";
+  }
 
   if (!cachedSession) {
-    const message = document.createElement("p");
-    message.textContent = "Masuk untuk melihat kursus yang sudah kamu daftar.";
-    message.className = "empty-state";
-    enrollmentsContainer.appendChild(message);
     cachedEnrollments = [];
     updateUserStats();
     renderCertificates();
+
+    if (hasContainer) {
+      const message = document.createElement("p");
+      message.textContent = "Masuk untuk melihat kursus yang sudah kamu daftar.";
+      message.className = "empty-state";
+      enrollmentsContainer.appendChild(message);
+    }
     return;
   }
 
-  let enrollments = [];
   try {
-    enrollments = await myEnrollments();
+    cachedEnrollments = await myEnrollments();
   } catch (error) {
     console.error(error);
-    const message = document.createElement("p");
-    message.textContent = "Gagal memuat daftar kursusmu.";
-    message.className = "empty-state";
-    enrollmentsContainer.appendChild(message);
     cachedEnrollments = [];
     updateUserStats();
     renderCertificates();
+
+    if (hasContainer) {
+      const message = document.createElement("p");
+      message.textContent = "Gagal memuat daftar kursusmu.";
+      message.className = "empty-state";
+      enrollmentsContainer.appendChild(message);
+    }
     return;
   }
 
-  cachedEnrollments = enrollments;
   updateUserStats();
   renderCertificates();
 
-  if (!enrollments.length) {
+  if (!hasContainer) {
+    return;
+  }
+
+  if (!cachedEnrollments.length) {
     const message = document.createElement("p");
     message.textContent = "Belum ada kursus yang kamu daftar.";
     message.className = "empty-state";
@@ -434,7 +578,7 @@ async function refreshMyEnrollmentsUI() {
     return;
   }
 
-  enrollments.forEach((item) => {
+  cachedEnrollments.forEach((item) => {
     const card = document.createElement("article");
     card.className = "course-card enrollment-card";
     card.innerHTML = `
@@ -466,7 +610,13 @@ async function updateSession() {
           return null;
         })
       : null;
-    loadStoredProfileDetails();
+
+    if (cachedSession) {
+      await loadProfileDetailsFromDatabase();
+    } else {
+      cachedProfileDetails = null;
+      cachedAvatarDataUrl = null;
+    }
   } catch (error) {
     console.error(error);
     cachedSession = null;
@@ -550,74 +700,145 @@ function updateUserStats() {
   statAverageScoreEl.textContent = averageScore.toFixed(1);
 }
 
-function getProfileStorageKey(suffix) {
-  if (!cachedSession?.user?.id) {
-    return null;
-  }
-  return `${PROFILE_STORAGE_PREFIX}${cachedSession.user.id}:${suffix}`;
-}
-
-function loadStoredProfileDetails() {
-  const infoKey = getProfileStorageKey("info");
-  const avatarKey = getProfileStorageKey("avatar");
-  const storage =
-    typeof window !== "undefined" ? window.localStorage ?? null : null;
-
+async function loadProfileDetailsFromDatabase() {
   cachedProfileDetails = null;
   cachedAvatarDataUrl = null;
 
-  if (infoKey && storage) {
-    try {
-      const raw = storage.getItem(infoKey);
-      cachedProfileDetails = raw ? JSON.parse(raw) : null;
-    } catch (error) {
-      console.warn("Gagal memuat info profil lokal", error);
-      cachedProfileDetails = null;
-    }
-  }
-
-  if (avatarKey && storage) {
-    try {
-      cachedAvatarDataUrl = storage.getItem(avatarKey) ?? null;
-    } catch (error) {
-      console.warn("Gagal memuat avatar lokal", error);
-      cachedAvatarDataUrl = null;
-    }
-  }
-}
-
-function saveStoredProfileDetails(data) {
-  const key = getProfileStorageKey("info");
-  const storage =
-    typeof window !== "undefined" ? window.localStorage ?? null : null;
-  if (!key || !storage) {
-    return;
-  }
-  try {
-    storage.setItem(key, JSON.stringify(data));
-    cachedProfileDetails = data;
-  } catch (error) {
-    console.warn("Gagal menyimpan info profil lokal", error);
-  }
-}
-
-function saveStoredAvatar(dataUrl) {
-  const key = getProfileStorageKey("avatar");
-  const storage =
-    typeof window !== "undefined" ? window.localStorage ?? null : null;
-  if (!key || !storage) {
+  if (!cachedSession?.user?.id || !supabaseClient) {
     return;
   }
 
   try {
-    if (dataUrl) {
-      storage.setItem(key, dataUrl);
-    } else {
-      storage.removeItem(key);
+    const { data, error } = await supabaseClient
+      .from("profile_details")
+      .select(
+        "birthdate, gender, track, major, occupation, company, location, bio, avatar_data_url"
+      )
+      .eq("user_id", cachedSession.user.id)
+      .maybeSingle();
+
+    if (error && error.code !== "PGRST116") {
+      throw error;
     }
-    cachedAvatarDataUrl = dataUrl;
+
+    cachedAvatarDataUrl = data?.avatar_data_url ?? null;
+    cachedProfileDetails = {
+      fullName:
+        cachedProfile?.full_name ??
+        cachedSession.user?.user_metadata?.full_name ??
+        cachedSession.user?.email ??
+        "",
+      birthdate: data?.birthdate ?? "",
+      gender: data?.gender ?? "",
+      track: data?.track ?? "",
+      major: data?.major ?? "",
+      occupation: data?.occupation ?? "",
+      company: data?.company ?? "",
+      location: data?.location ?? "",
+      bio: data?.bio ?? "",
+      avatarDataUrl: cachedAvatarDataUrl,
+    };
   } catch (error) {
-    console.warn("Gagal menyimpan avatar lokal", error);
+    console.error("Gagal memuat detail profil", error);
+    cachedProfileDetails = {
+      fullName:
+        cachedProfile?.full_name ??
+        cachedSession?.user?.user_metadata?.full_name ??
+        cachedSession?.user?.email ??
+        "",
+      birthdate: "",
+      gender: "",
+      track: "",
+      major: "",
+      occupation: "",
+      company: "",
+      location: "",
+      bio: "",
+      avatarDataUrl: null,
+    };
+    cachedAvatarDataUrl = null;
+  }
+}
+
+async function saveProfileDetailsToDatabase(data) {
+  if (!cachedSession?.user?.id || !supabaseClient) {
+    throw new Error("Layanan profil tidak tersedia");
+  }
+
+  const userId = cachedSession.user.id;
+  const profilePayload = {
+    id: userId,
+    full_name: data.fullName?.trim() || null,
+  };
+
+  const normalize = (value) => {
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      return trimmed === "" ? null : trimmed;
+    }
+    return value ?? null;
+  };
+
+  const detailsPayload = {
+    user_id: userId,
+    birthdate: data.birthdate || null,
+    gender: normalize(data.gender),
+    track: normalize(data.track),
+    major: normalize(data.major),
+    occupation: normalize(data.occupation),
+    company: normalize(data.company),
+    location: normalize(data.location),
+    bio: normalize(data.bio),
+  };
+
+  const { error: profileError } = await supabaseClient
+    .from("profiles")
+    .upsert(profilePayload, { onConflict: "id" });
+
+  if (profileError) {
+    throw profileError;
+  }
+
+  const { error: detailsError } = await supabaseClient
+    .from("profile_details")
+    .upsert(detailsPayload, { onConflict: "user_id" });
+
+  if (detailsError) {
+    throw detailsError;
+  }
+
+  cachedProfile = cachedProfile
+    ? { ...cachedProfile, full_name: profilePayload.full_name }
+    : { id: userId, full_name: profilePayload.full_name };
+  cachedProfileDetails = {
+    ...data,
+  };
+  if (cachedAvatarDataUrl) {
+    cachedProfileDetails.avatarDataUrl = cachedAvatarDataUrl;
+  }
+}
+
+async function saveAvatarToDatabase(dataUrl) {
+  if (!cachedSession?.user?.id || !supabaseClient) {
+    throw new Error("Layanan avatar tidak tersedia");
+  }
+
+  const payload = {
+    user_id: cachedSession.user.id,
+    avatar_data_url: dataUrl || null,
+  };
+
+  const { error } = await supabaseClient
+    .from("profile_details")
+    .upsert(payload, { onConflict: "user_id" });
+
+  if (error) {
+    throw error;
+  }
+
+  cachedAvatarDataUrl = dataUrl || null;
+  if (cachedProfileDetails) {
+    cachedProfileDetails.avatarDataUrl = cachedAvatarDataUrl;
   }
 }
 
@@ -740,24 +961,14 @@ function updateAvatarPreview() {
     return;
   }
 
-  const name =
-    cachedProfileDetails?.fullName ||
-    cachedProfile?.full_name ||
-    cachedSession.user?.user_metadata?.full_name ||
-    cachedSession.user?.email ||
-    "Pengguna";
+  const name = getUserDisplayName();
 
   if (cachedAvatarDataUrl) {
-    avatarPreviewEl.style.backgroundImage = `url(${cachedAvatarDataUrl})`;
+    avatarPreviewEl.style.backgroundImage = `url("${cachedAvatarDataUrl}")`;
     avatarPreviewEl.textContent = "";
   } else {
     avatarPreviewEl.style.backgroundImage = "";
-    const initials = name
-      .split(" ")
-      .filter(Boolean)
-      .map((part) => part[0]?.toUpperCase() ?? "")
-      .slice(0, 2)
-      .join("");
+    const initials = getUserInitials(name);
     avatarPreviewEl.textContent = initials || "Inisial";
   }
 }
@@ -823,7 +1034,7 @@ function updateAvatarPreviewWithSelection() {
   }
 
   if (selectedAvatarDataUrl) {
-    avatarPreviewEl.style.backgroundImage = `url(${selectedAvatarDataUrl})`;
+    avatarPreviewEl.style.backgroundImage = `url("${selectedAvatarDataUrl}")`;
     avatarPreviewEl.textContent = "";
   } else {
     updateAvatarPreview();
@@ -846,10 +1057,22 @@ async function handleAvatarSubmit(event) {
     return;
   }
 
-  saveStoredAvatar(selectedAvatarDataUrl);
-  selectedAvatarDataUrl = null;
-  setFeedbackMessage(avatarFeedbackEl, "Foto profil berhasil disimpan.", true);
-  updateAvatarPreview();
+  setFeedbackMessage(avatarFeedbackEl, "Menyimpan foto profil...", true);
+
+  try {
+    await saveAvatarToDatabase(selectedAvatarDataUrl);
+    selectedAvatarDataUrl = null;
+    setFeedbackMessage(avatarFeedbackEl, "Foto profil berhasil disimpan.", true);
+    updateAvatarPreview();
+    renderNavbar();
+  } catch (error) {
+    console.error(error);
+    setFeedbackMessage(
+      avatarFeedbackEl,
+      "Gagal menyimpan foto profil. Coba lagi nanti.",
+      false
+    );
+  }
 }
 
 async function handlePasswordSubmit(event) {
@@ -919,7 +1142,7 @@ async function handlePasswordSubmit(event) {
   }
 }
 
-function handleProfileInfoSubmit(event) {
+async function handleProfileInfoSubmit(event) {
   event.preventDefault();
   if (!cachedSession) {
     setFeedbackMessage(
@@ -943,11 +1166,22 @@ function handleProfileInfoSubmit(event) {
     bio: formData.get("bio")?.toString().trim() ?? "",
   };
 
-  saveStoredProfileDetails(payload);
-  populateProfileFormFields();
-  renderNavbar();
-  updateAvatarPreview();
-  setFeedbackMessage(profileInfoFeedbackEl, "Profil berhasil disimpan.", true);
+  setFeedbackMessage(profileInfoFeedbackEl, "Menyimpan profil...", true);
+
+  try {
+    await saveProfileDetailsToDatabase(payload);
+    populateProfileFormFields();
+    renderNavbar();
+    updateAvatarPreview();
+    setFeedbackMessage(profileInfoFeedbackEl, "Profil berhasil disimpan.", true);
+  } catch (error) {
+    console.error(error);
+    setFeedbackMessage(
+      profileInfoFeedbackEl,
+      "Gagal menyimpan profil. Coba lagi nanti.",
+      false
+    );
+  }
 }
 
 function renderCertificates() {

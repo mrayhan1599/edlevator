@@ -788,6 +788,10 @@ function renderNavbar() {
     const existingImage = avatarVisual.querySelector("img");
 
     if (cachedAvatarDataUrl) {
+      const backgroundValue = `url("${cachedAvatarDataUrl}")`;
+      if (avatarVisual.style.backgroundImage !== backgroundValue) {
+        avatarVisual.style.backgroundImage = backgroundValue;
+      }
       if (existingImage) {
         existingImage.src = cachedAvatarDataUrl;
       } else {
@@ -799,13 +803,14 @@ function renderNavbar() {
         avatarImage.decoding = "async";
         avatarVisual.appendChild(avatarImage);
       }
-      avatarVisual.style.backgroundImage = "";
       avatarVisual.classList.add("has-image");
     } else {
       if (existingImage) {
         existingImage.remove();
       }
-      avatarVisual.style.backgroundImage = "";
+      if (avatarVisual.style.backgroundImage) {
+        avatarVisual.style.backgroundImage = "";
+      }
       avatarVisual.textContent = initials;
       avatarVisual.classList.remove("has-image");
     }

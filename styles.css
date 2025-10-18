@@ -719,12 +719,22 @@ footer {
     overflow: hidden;
 }
 
+.avatar-visual > * {
+    grid-area: 1 / 1;
+    position: relative;
+    z-index: 1;
+}
+
 .avatar-visual img {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center;
     border-radius: inherit;
     display: block;
+    z-index: 2;
 }
 
 .avatar-initials {
@@ -937,8 +947,26 @@ footer {
     margin-inline: auto;
 }
 
+.avatar-preview > * {
+    grid-area: 1 / 1;
+    position: relative;
+    z-index: 1;
+}
+
 .avatar-preview.has-image {
     background-color: #fff;
+}
+
+.avatar-preview img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    border-radius: inherit;
+    display: block;
+    z-index: 2;
 }
 
 .file-input {

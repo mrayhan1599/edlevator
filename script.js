@@ -381,19 +381,24 @@ async function getAvatarUrlFromStorage(path) {
   }
 
   try {
-    const { data } = supabaseClient.storage
-      .from(AVATAR_BUCKET)
-      .getPublicUrl(path);
+    const bucket = supabaseClient.storage.from(AVATAR_BUCKET);
 
-    if (data?.publicUrl) {
-      return data.publicUrl;
+    const { data: signedData } = await bucket.createSignedUrl(
+      path,
+      AVATAR_SIGNED_URL_DURATION
+    );
+
+    if (signedData?.signedUrl) {
+      return signedData.signedUrl;
     }
 
-    const { data: signedData } = await supabaseClient.storage
-      .from(AVATAR_BUCKET)
-      .createSignedUrl(path, AVATAR_SIGNED_URL_DURATION);
+    const { data: publicData } = bucket.getPublicUrl(path);
 
-    return signedData?.signedUrl ?? null;
+    if (publicData?.publicUrl) {
+      return publicData.publicUrl;
+    }
+
+    return null;
   } catch (error) {
     console.warn("Gagal membuat URL avatar dari storage", error);
     return null;
@@ -468,6 +473,15 @@ function withAvatarCacheBusting(url) {
   try {
     const trimmed = url.trim();
     const parsed = new URL(trimmed, window.location.origin);
+
+    // Signed URLs (e.g., from Supabase Storage) already contain security
+    // parameters such as `token`. Menambahkan parameter tambahan akan
+    // mengubah signature dan menyebabkan respons 401. Abaikan cache busting
+    // untuk URL bertoken tersebut.
+    if (parsed.searchParams.has("token")) {
+      return parsed.toString();
+    }
+
     const token = deriveAvatarCacheToken();
 
     if (token && !parsed.searchParams.has("v")) {

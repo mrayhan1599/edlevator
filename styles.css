@@ -449,6 +449,43 @@ footer {
     gap: 2rem;
 }
 
+.dashboard-simple {
+    padding: 2rem;
+    background: var(--card);
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+}
+
+.dashboard-simple .page-header {
+    margin-bottom: 1rem;
+}
+
+.dashboard-cta {
+    margin-top: 1rem;
+}
+
+.dashboard-cta-card {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+    padding: clamp(1.5rem, 1.2rem + 1vw, 2rem);
+    border-radius: 20px;
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.12), rgba(14, 165, 233, 0.05));
+    border: 1px solid rgba(14, 165, 233, 0.18);
+}
+
+.dashboard-cta-card h2 {
+    margin-bottom: 0.35rem;
+    font-size: clamp(1.25rem, 1.1rem + 0.8vw, 1.65rem);
+}
+
+.dashboard-cta-card p {
+    color: var(--text-light);
+    max-width: 520px;
+}
+
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -701,6 +738,57 @@ footer {
 
 .avatar-visual.has-image .avatar-initials {
     opacity: 0;
+}
+
+.nav-loading {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 40px;
+}
+
+.skeleton {
+    position: relative;
+    overflow: hidden;
+    background: rgba(148, 163, 184, 0.25);
+    border-radius: 999px;
+}
+
+.skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        90deg,
+        rgba(148, 163, 184, 0.15) 0%,
+        rgba(255, 255, 255, 0.55) 50%,
+        rgba(148, 163, 184, 0.15) 100%
+    );
+    transform: translateX(-100%);
+    animation: skeleton-shimmer 1.2s ease-in-out infinite;
+}
+
+.nav-loading .avatar-skeleton {
+    width: 40px;
+    height: 40px;
+}
+
+.nav-loading .button-skeleton {
+    width: 140px;
+    height: 40px;
+    border-radius: 999px;
+}
+
+@keyframes skeleton-shimmer {
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .skeleton::after {
+        animation: none;
+    }
 }
 
 .nav-dropdown {
@@ -1662,6 +1750,14 @@ footer {
     .nav-toggle {
         display: inline-flex;
     }
+
+    .dashboard-simple {
+        padding: 1.5rem;
+    }
+
+    .dashboard-cta-card {
+        align-items: flex-start;
+    }
 }
 
 @media (max-width: 640px) {
@@ -1701,6 +1797,16 @@ footer {
     }
 
     .explore-cta-actions {
+        justify-content: center;
+    }
+
+    .dashboard-cta-card {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .dashboard-cta-card .btn {
+        width: 100%;
         justify-content: center;
     }
 }

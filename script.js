@@ -13,6 +13,7 @@ let navToggleButton = null;
 let navLinksList = null;
 let navContainerEl = null;
 let closeMobileNavMenu = () => {};
+let isSessionLoading = true;
 
 const SAMPLE_COURSES = [
   {
@@ -877,6 +878,17 @@ function renderNavbar() {
   cleanupNavProfileMenu();
   closeMobileNavMenu();
 
+  if (isSessionLoading) {
+    navAuthEl.innerHTML = `
+      <div class="nav-loading" role="status" aria-live="polite" aria-busy="true">
+        <span class="skeleton avatar-skeleton" aria-hidden="true"></span>
+        <span class="skeleton button-skeleton" aria-hidden="true"></span>
+        <span class="sr-only">Memuat navigasi pengguna...</span>
+      </div>
+    `;
+    return;
+  }
+
   if (!cachedSession) {
     navAuthEl.innerHTML = `
       <a class="btn secondary" href="login.html">Login</a>
@@ -906,6 +918,7 @@ function renderNavbar() {
         <button type="button" class="dropdown-logout" id="logout-button">Logout</button>
       </div>
     </div>
+    <a class="btn" href="explore.html">Mulai Belajar</a>
   `;
 
   const avatarVisual = navAuthEl.querySelector(".avatar-visual");
@@ -1321,6 +1334,9 @@ async function refreshMyEnrollmentsUI() {
 }
 
 async function updateSession() {
+  isSessionLoading = true;
+  renderNavbar();
+
   try {
     cachedSession = await getSession();
     cachedProfile = cachedSession
@@ -1351,6 +1367,8 @@ async function updateSession() {
     cachedAvatarStoragePath = null;
     profilesTableSupported = true;
   }
+
+  isSessionLoading = false;
 
   renderNavbar();
   updateDashboardAccess();

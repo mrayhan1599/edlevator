@@ -13,7 +13,7 @@
                 <span>E</span>
                 Edlevator
             </a>
-            <ul class="nav-links">
+            <ul class="nav-links" id="primary-navigation">
                 <li><a href="index.html">Home</a></li>
                 <li class="nav-item nav-item-has-submenu current">
                     <button type="button" class="nav-link-toggle" aria-expanded="false">
@@ -30,7 +30,13 @@
                 <li><a href="explore.html">Explore</a></li>
                 <li><a href="admin.html">Admin</a></li>
             </ul>
-            <div class="nav-actions" id="nav-auth"></div>
+            <div class="nav-end">
+                <button type="button" class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="primary-navigation">
+                    <span class="sr-only">Buka navigasi utama</span>
+                    <span class="nav-toggle-icon" aria-hidden="true"></span>
+                </button>
+                <div class="nav-actions" id="nav-auth"></div>
+            </div>
         </div>
     </nav>
 

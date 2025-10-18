@@ -927,6 +927,7 @@ footer {
     border-radius: 50%;
     aspect-ratio: 1 / 1;
     background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+    position: relative;
     display: grid;
     place-items: center;
     color: var(--text-dark);
@@ -947,6 +948,33 @@ footer {
 
 .avatar-preview.has-image {
     background-color: #fff;
+}
+
+.avatar-preview.has-image .avatar-initials {
+    opacity: 0;
+}
+
+.avatar-preview .avatar-image {
+    z-index: 2;
+}
+
+.nav-profile .avatar-button {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.avatar-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    border-radius: inherit;
+    display: block;
+    pointer-events: none;
 }
 
 .file-input {

@@ -785,11 +785,26 @@ function renderNavbar() {
 
   const avatarVisual = navAuthEl.querySelector(".avatar-visual");
   if (avatarVisual) {
+    const existingImage = avatarVisual.querySelector("img");
+
     if (cachedAvatarDataUrl) {
-      avatarVisual.style.backgroundImage = `url("${cachedAvatarDataUrl}")`;
-      avatarVisual.textContent = "";
+      if (existingImage) {
+        existingImage.src = cachedAvatarDataUrl;
+      } else {
+        avatarVisual.textContent = "";
+        const avatarImage = document.createElement("img");
+        avatarImage.src = cachedAvatarDataUrl;
+        avatarImage.alt = "";
+        avatarImage.loading = "lazy";
+        avatarImage.decoding = "async";
+        avatarVisual.appendChild(avatarImage);
+      }
+      avatarVisual.style.backgroundImage = "";
       avatarVisual.classList.add("has-image");
     } else {
+      if (existingImage) {
+        existingImage.remove();
+      }
       avatarVisual.style.backgroundImage = "";
       avatarVisual.textContent = initials;
       avatarVisual.classList.remove("has-image");

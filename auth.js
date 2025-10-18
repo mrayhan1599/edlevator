@@ -195,11 +195,23 @@ export async function getUserProfile(userId) {
     return null;
   }
   const client = ensureClient();
-  const { data, error } = await client
+  const baseQuery = client
     .from("profiles")
-    .select("id, full_name, role, created_at")
+    .select("id, full_name, role, created_at, updated_at, avatar_url")
     .eq("id", userId)
     .maybeSingle();
+
+  let { data, error } = await baseQuery;
+
+  if (error && error.code === "42703") {
+    const fallbackQuery = client
+      .from("profiles")
+      .select("id, full_name, role, created_at")
+      .eq("id", userId)
+      .maybeSingle();
+
+    ({ data, error } = await fallbackQuery);
+  }
 
   if (error) {
     throw error;

@@ -598,6 +598,33 @@ footer {
     flex-wrap: wrap;
 }
 
+.nav-auth-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+}
+
+.avatar-placeholder {
+    display: block;
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(148, 163, 184, 0.35), rgba(226, 232, 240, 0.7));
+    animation: avatarPlaceholderPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes avatarPlaceholderPulse {
+    0%,
+    100% {
+        opacity: 0.6;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
 .nav-end {
     display: flex;
     align-items: center;

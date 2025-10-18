@@ -224,6 +224,9 @@ let profileEmailInput = null;
 let selectedAvatarDataUrl = null;
 let selectedAvatarFile = null;
 let cachedAvatarStoragePath = null;
+let authLoading = false;
+
+const AVATAR_CACHE_KEY = "edlevator:avatar-cache";
 
 const AVATAR_BUCKET = "avatars";
 const AVATAR_SIGNED_URL_DURATION = 60 * 60 * 24 * 7; // 7 hari
@@ -370,6 +373,108 @@ function buildProfileDetails({ detailsData = {}, metadata = {} } = {}) {
   };
 }
 
+function readAvatarCache() {
+  if (
+    typeof window === "undefined" ||
+    typeof window.localStorage === "undefined"
+  ) {
+    return null;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(AVATAR_CACHE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") {
+      return null;
+    }
+
+    return parsed;
+  } catch (error) {
+    console.warn("Gagal membaca cache avatar", error);
+    return null;
+  }
+}
+
+function writeAvatarCache(entry) {
+  if (
+    typeof window === "undefined" ||
+    typeof window.localStorage === "undefined"
+  ) {
+    return;
+  }
+
+  try {
+    if (!entry) {
+      window.localStorage.removeItem(AVATAR_CACHE_KEY);
+      return;
+    }
+
+    window.localStorage.setItem(AVATAR_CACHE_KEY, JSON.stringify(entry));
+  } catch (error) {
+    console.warn("Gagal menyimpan cache avatar", error);
+  }
+}
+
+function clearAvatarCache() {
+  writeAvatarCache(null);
+}
+
+function applyAvatarCacheFromStorage(userId) {
+  if (!userId) {
+    cachedAvatarDataUrl = null;
+    cachedAvatarStoragePath = null;
+    return;
+  }
+
+  const cache = readAvatarCache();
+
+  if (cache && cache.userId === userId) {
+    cachedAvatarDataUrl =
+      cache.dataUrl ?? cachedProfileDetails?.avatarDataUrl ?? null;
+    cachedAvatarStoragePath =
+      cache.storagePath ?? cachedProfileDetails?.avatarStoragePath ?? null;
+
+    if (cache.displayName) {
+      const currentName = cachedProfileDetails?.fullName ?? "";
+      if (!currentName || currentName.trim() === "") {
+        cachedProfileDetails = {
+          ...(cachedProfileDetails ?? {}),
+          fullName: cache.displayName,
+        };
+      }
+    }
+
+    return;
+  }
+
+  cachedAvatarDataUrl = cachedProfileDetails?.avatarDataUrl ?? null;
+  cachedAvatarStoragePath = cachedProfileDetails?.avatarStoragePath ?? null;
+}
+
+function syncAvatarCacheFromState() {
+  const userId = cachedSession?.user?.id;
+
+  if (!userId) {
+    clearAvatarCache();
+    return;
+  }
+
+  const payload = {
+    userId,
+    dataUrl: cachedAvatarDataUrl ?? null,
+    storagePath:
+      cachedAvatarStoragePath ?? cachedProfileDetails?.avatarStoragePath ?? null,
+    displayName: cachedProfileDetails?.fullName ?? null,
+    updatedAt: Date.now(),
+  };
+
+  writeAvatarCache(payload);
+}
+
 function hydrateSessionFromStorage() {
   if (
     typeof window === "undefined" ||
@@ -420,6 +525,8 @@ function hydrateSessionFromStorage() {
       if (!cachedProfileDetails) {
         cachedProfileDetails = buildProfileDetails({ metadata });
       }
+
+      applyAvatarCacheFromStorage(session.user.id);
 
       return true;
     }
@@ -994,6 +1101,15 @@ function renderNavbar() {
   cleanupNavProfileMenu();
   closeMobileNavMenu();
 
+  if (authLoading && !cachedSession) {
+    navAuthEl.innerHTML = `
+      <div class="nav-auth-loading" aria-hidden="true">
+        <span class="avatar-placeholder"></span>
+      </div>
+    `;
+    return;
+  }
+
   if (!cachedSession) {
     navAuthEl.innerHTML = `
       <a class="btn secondary" href="login.html">Login</a>
@@ -1007,7 +1123,6 @@ function renderNavbar() {
     getUserInitials(displayName) || displayName?.[0]?.toUpperCase() || "E";
 
   navAuthEl.innerHTML = `
-    <a class="btn" href="dashboard.html">Mulai Belajar</a>
     <div class="nav-profile">
       <button type="button" class="avatar-button" id="nav-avatar-button" aria-haspopup="true" aria-expanded="false">
         <span class="avatar-visual" aria-hidden="true">
@@ -1426,6 +1541,7 @@ async function refreshMyEnrollmentsUI() {
 }
 
 async function updateSession() {
+  authLoading = true;
   renderNavbar();
 
   try {
@@ -1442,12 +1558,14 @@ async function updateSession() {
 
     if (cachedSession) {
       await loadProfileDetailsFromDatabase();
+      syncAvatarCacheFromState();
     } else {
       cachedProfileDetails = null;
       cachedAvatarDataUrl = null;
       cachedAvatarStoragePath = null;
       profileDetailsSupported = true;
       profilesTableSupported = true;
+      clearAvatarCache();
     }
   } catch (error) {
     console.error(error);
@@ -1457,6 +1575,9 @@ async function updateSession() {
     cachedAvatarDataUrl = null;
     cachedAvatarStoragePath = null;
     profilesTableSupported = true;
+    clearAvatarCache();
+  } finally {
+    authLoading = false;
   }
 
   renderNavbar();
@@ -2722,6 +2843,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   adminEmptyState = document.getElementById("admin-empty-state");
 
   hydrateSessionFromStorage();
+  authLoading = !cachedSession;
   renderNavbar();
 
   setupMainNavDropdowns();

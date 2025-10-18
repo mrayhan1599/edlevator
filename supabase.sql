@@ -7,6 +7,20 @@ CREATE TABLE profiles (
   created_at timestamp DEFAULT now()
 );
 
+CREATE TABLE profile_details (
+  user_id uuid PRIMARY KEY REFERENCES profiles(id) ON DELETE CASCADE,
+  birthdate date,
+  gender text,
+  track text,
+  major text,
+  occupation text,
+  company text,
+  location text,
+  bio text,
+  avatar_data_url text,
+  updated_at timestamp DEFAULT now()
+);
+
 -- Helper function to evaluate admin privileges without triggering recursive
 -- policy checks on the profiles table. SECURITY DEFINER allows this function
 -- to read from profiles without being subject to row level security policies.
@@ -79,6 +93,7 @@ CREATE TABLE enrollments (
 );
 
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE profile_details ENABLE ROW LEVEL SECURITY;
 ALTER TABLE enrollments ENABLE ROW LEVEL SECURITY;
 
 -- Kebijakan akses profiles
@@ -92,6 +107,19 @@ CREATE POLICY "insert own profile" ON profiles
 FOR INSERT WITH CHECK (auth.uid() = id);
 
 CREATE POLICY "admin select all profiles" ON profiles
+FOR SELECT USING (public.is_admin(auth.uid()));
+
+-- Kebijakan akses profile_details
+CREATE POLICY "select own profile details" ON profile_details
+FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "insert own profile details" ON profile_details
+FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "update own profile details" ON profile_details
+FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "admin select profile details" ON profile_details
 FOR SELECT USING (public.is_admin(auth.uid()));
 
 -- Kebijakan akses enrollments

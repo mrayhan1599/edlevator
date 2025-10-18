@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sertifikat Belajar - Edlevator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="logo" aria-label="Beranda Edlevator">
+                <span>E</span>
+                Edlevator
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="profile.html">Profil</a></li>
+                <li><a href="courses.html">Kursus</a></li>
+                <li><a href="certificates.html" aria-current="page">Sertifikat</a></li>
+                <li><a href="explore.html">Explore</a></li>
+                <li><a href="admin.html">Admin</a></li>
+            </ul>
+            <div class="nav-actions" id="nav-auth"></div>
+        </div>
+    </nav>
+
+    <main class="page-container">
+        <section class="page-header">
+            <h1>Sertifikat Belajar</h1>
+            <p>Kumpulkan pencapaianmu dari kursus yang sudah selesai dan bagikan ke dunia profesional.</p>
+        </section>
+
+        <section class="certificates-page">
+            <div class="dashboard-section">
+                <div id="certificate-list" class="certificate-grid" aria-live="polite"></div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        &copy; 2024 Edlevator. Semua hak dilindungi.
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" src="script.js"></script>
+</body>
+</html>

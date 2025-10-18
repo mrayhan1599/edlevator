@@ -89,11 +89,10 @@
                 const result = await signUp(email, password, fullName);
 
                 if (result?.requiresEmailConfirmation) {
-                    setFeedback(
-                        "Pendaftaran berhasil! Periksa email kamu untuk mengkonfirmasi akun sebelum login.",
-                        "success"
-                    );
-                    form.reset();
+                    const confirmationUrl = new URL("thankyou.html", window.location.href);
+                    confirmationUrl.searchParams.set("email", email);
+                    window.location.href = confirmationUrl.toString();
+                    return;
                 } else {
                     window.location.href = "dashboard.html";
                 }

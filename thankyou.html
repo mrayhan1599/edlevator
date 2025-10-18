@@ -24,8 +24,8 @@
 
     <main>
         <section class="thankyou">
-            <h1>Terima kasih sudah mendaftar di Edlevator!</h1>
-            <p>Kami akan segera menghubungimu melalui email untuk langkah selanjutnya. Selamat menjelajah kursus pilihanmu.</p>
+            <h1>Pendaftaran Berhasil!</h1>
+            <p id="email-confirmation-message">Periksa email kamu untuk mengkonfirmasi akun sebelum login.</p>
             <a href="index.html" class="btn">Kembali ke Beranda</a>
         </section>
     </main>
@@ -35,5 +35,19 @@
     </footer>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script type="module" src="script.js"></script>
+    <script type="module">
+        const messageEl = document.getElementById("email-confirmation-message");
+        const params = new URLSearchParams(window.location.search);
+        const email = params.get("email");
+
+        if (messageEl) {
+            if (email) {
+                const escapedEmail = email.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                messageEl.innerHTML = `Pendaftaran berhasil! Periksa email <strong>${escapedEmail}</strong> untuk mengkonfirmasi akun sebelum login.`;
+            } else {
+                messageEl.textContent = "Pendaftaran berhasil! Periksa email kamu untuk mengkonfirmasi akun sebelum login.";
+            }
+        }
+    </script>
 </body>
 </html>

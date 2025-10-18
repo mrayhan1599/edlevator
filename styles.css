@@ -744,57 +744,6 @@ footer {
     opacity: 0;
 }
 
-.nav-loading {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    min-height: 40px;
-}
-
-.skeleton {
-    position: relative;
-    overflow: hidden;
-    background: rgba(148, 163, 184, 0.25);
-    border-radius: 999px;
-}
-
-.skeleton::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-        90deg,
-        rgba(148, 163, 184, 0.15) 0%,
-        rgba(255, 255, 255, 0.55) 50%,
-        rgba(148, 163, 184, 0.15) 100%
-    );
-    transform: translateX(-100%);
-    animation: skeleton-shimmer 1.2s ease-in-out infinite;
-}
-
-.nav-loading .avatar-skeleton {
-    width: 40px;
-    height: 40px;
-}
-
-.nav-loading .button-skeleton {
-    width: 140px;
-    height: 40px;
-    border-radius: 999px;
-}
-
-@keyframes skeleton-shimmer {
-    100% {
-        transform: translateX(100%);
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .skeleton::after {
-        animation: none;
-    }
-}
-
 .nav-dropdown {
     position: absolute;
     top: calc(100% + 0.5rem);

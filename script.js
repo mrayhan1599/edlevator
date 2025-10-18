@@ -13,7 +13,6 @@ let navToggleButton = null;
 let navLinksList = null;
 let navContainerEl = null;
 let closeMobileNavMenu = () => {};
-let isSessionLoading = true;
 
 const SAMPLE_COURSES = [
   {
@@ -369,6 +368,66 @@ function buildProfileDetails({ detailsData = {}, metadata = {} } = {}) {
         ? avatarStoragePathSource
       : null,
   };
+}
+
+function hydrateSessionFromStorage() {
+  if (
+    typeof window === "undefined" ||
+    typeof window.localStorage === "undefined" ||
+    cachedSession
+  ) {
+    return false;
+  }
+
+  try {
+    const storage = window.localStorage;
+    const keys = Object.keys(storage);
+
+    for (const key of keys) {
+      if (!key.startsWith("sb-") || !key.endsWith("-auth-token")) {
+        continue;
+      }
+
+      const rawValue = storage.getItem(key);
+      if (!rawValue) {
+        continue;
+      }
+
+      let parsed;
+      try {
+        parsed = JSON.parse(rawValue);
+      } catch (error) {
+        console.warn("Gagal mengurai data sesi lokal", error);
+        continue;
+      }
+
+      const session = parsed?.currentSession ?? parsed?.session ?? null;
+      if (!session?.user) {
+        continue;
+      }
+
+      cachedSession = session;
+
+      const metadata = session.user.user_metadata ?? {};
+      cachedProfile = {
+        id: session.user.id,
+        full_name:
+          metadataValue(metadata, "full_name") ?? session.user.email ?? null,
+        role: metadataValue(metadata, "role") ?? null,
+        avatar_url: metadataValue(metadata, "avatar_url") ?? null,
+      };
+
+      if (!cachedProfileDetails) {
+        cachedProfileDetails = buildProfileDetails({ metadata });
+      }
+
+      return true;
+    }
+  } catch (error) {
+    console.warn("Gagal membaca sesi dari penyimpanan lokal", error);
+  }
+
+  return false;
 }
 
 function isDataUrl(value) {
@@ -935,17 +994,6 @@ function renderNavbar() {
   cleanupNavProfileMenu();
   closeMobileNavMenu();
 
-  if (isSessionLoading) {
-    navAuthEl.innerHTML = `
-      <div class="nav-loading" role="status" aria-live="polite" aria-busy="true">
-        <span class="skeleton avatar-skeleton" aria-hidden="true"></span>
-        <span class="skeleton button-skeleton" aria-hidden="true"></span>
-        <span class="sr-only">Memuat navigasi pengguna...</span>
-      </div>
-    `;
-    return;
-  }
-
   if (!cachedSession) {
     navAuthEl.innerHTML = `
       <a class="btn secondary" href="login.html">Login</a>
@@ -959,6 +1007,7 @@ function renderNavbar() {
     getUserInitials(displayName) || displayName?.[0]?.toUpperCase() || "E";
 
   navAuthEl.innerHTML = `
+    <a class="btn" href="dashboard.html">Mulai Belajar</a>
     <div class="nav-profile">
       <button type="button" class="avatar-button" id="nav-avatar-button" aria-haspopup="true" aria-expanded="false">
         <span class="avatar-visual" aria-hidden="true">
@@ -1377,7 +1426,6 @@ async function refreshMyEnrollmentsUI() {
 }
 
 async function updateSession() {
-  isSessionLoading = true;
   renderNavbar();
 
   try {
@@ -1410,8 +1458,6 @@ async function updateSession() {
     cachedAvatarStoragePath = null;
     profilesTableSupported = true;
   }
-
-  isSessionLoading = false;
 
   renderNavbar();
   updateDashboardAccess();
@@ -2674,6 +2720,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   adminCourseFilter = document.getElementById("admin-filter-course");
   adminStatusFilter = document.getElementById("admin-filter-status");
   adminEmptyState = document.getElementById("admin-empty-state");
+
+  hydrateSessionFromStorage();
+  renderNavbar();
 
   setupMainNavDropdowns();
   setupMobileNavToggle();

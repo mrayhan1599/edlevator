@@ -2679,8 +2679,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupMobileNavToggle();
   initializeEventListeners();
   initializeProfileForms();
-  await initializeCourseFilters();
-  await updateSession();
+  const sessionPromise = updateSession();
+
+  try {
+    await initializeCourseFilters();
+  } catch (error) {
+    console.error(error);
+  }
+
+  await sessionPromise;
 
   if (adminCourseFilter) {
     adminCourseFilter.addEventListener("change", renderAdminEnrollments);

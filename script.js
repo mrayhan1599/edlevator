@@ -468,6 +468,15 @@ function withAvatarCacheBusting(url) {
   try {
     const trimmed = url.trim();
     const parsed = new URL(trimmed, window.location.origin);
+
+    // Signed URLs (e.g., from Supabase Storage) already contain security
+    // parameters such as `token`. Menambahkan parameter tambahan akan
+    // mengubah signature dan menyebabkan respons 401. Abaikan cache busting
+    // untuk URL bertoken tersebut.
+    if (parsed.searchParams.has("token")) {
+      return parsed.toString();
+    }
+
     const token = deriveAvatarCacheToken();
 
     if (token && !parsed.searchParams.has("v")) {

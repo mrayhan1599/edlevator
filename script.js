@@ -226,6 +226,7 @@ let selectedAvatarFile = null;
 let cachedAvatarStoragePath = null;
 
 const AVATAR_BUCKET = "avatars";
+const AVATAR_SIGNED_URL_DURATION = 60 * 60 * 24 * 7; // 7 hari
 const MAX_AVATAR_FILE_SIZE = 2 * 1024 * 1024; // 2 MB
 const ALLOWED_AVATAR_MIME_TYPES = new Set([
   "image/png",
@@ -356,6 +357,57 @@ function buildProfileDetails({ detailsData = {}, metadata = {} } = {}) {
         ? avatarStoragePathSource
       : null,
   };
+}
+
+function isDataUrl(value) {
+  return typeof value === "string" && value.trim().startsWith("data:");
+}
+
+async function getAvatarUrlFromStorage(path) {
+  if (!path || !supabaseClient?.storage) {
+    return null;
+  }
+
+  try {
+    const { data } = supabaseClient.storage
+      .from(AVATAR_BUCKET)
+      .getPublicUrl(path);
+
+    if (data?.publicUrl) {
+      return data.publicUrl;
+    }
+
+    const { data: signedData } = await supabaseClient.storage
+      .from(AVATAR_BUCKET)
+      .createSignedUrl(path, AVATAR_SIGNED_URL_DURATION);
+
+    return signedData?.signedUrl ?? null;
+  } catch (error) {
+    console.warn("Gagal membuat URL avatar dari storage", error);
+    return null;
+  }
+}
+
+async function resolveAvatarUrl({
+  avatarDataUrl,
+  avatarStoragePath,
+} = {}) {
+  if (isDataUrl(avatarDataUrl)) {
+    return avatarDataUrl;
+  }
+
+  if (avatarStoragePath) {
+    const storageUrl = await getAvatarUrlFromStorage(avatarStoragePath);
+    if (storageUrl) {
+      return storageUrl;
+    }
+  }
+
+  if (typeof avatarDataUrl === "string" && avatarDataUrl.trim() !== "") {
+    return avatarDataUrl.trim();
+  }
+
+  return null;
 }
 
 async function seedProfileTablesFromMetadata(data = {}) {
@@ -1322,7 +1374,10 @@ async function loadProfileDetailsFromDatabase() {
 
     if (!profileDetailsSupported) {
       cachedProfileDetails = buildProfileDetails({ metadata });
-      cachedAvatarDataUrl = cachedProfileDetails.avatarDataUrl ?? null;
+      const resolvedAvatarUrl = await resolveAvatarUrl(cachedProfileDetails);
+      cachedProfileDetails.avatarDataUrl = resolvedAvatarUrl;
+      cachedAvatarDataUrl = resolvedAvatarUrl;
+      cachedAvatarStoragePath = cachedProfileDetails.avatarStoragePath ?? null;
       return;
     }
 
@@ -1350,7 +1405,10 @@ async function loadProfileDetailsFromDatabase() {
       if (isProfileDetailsUnsupportedError(error)) {
         profileDetailsSupported = false;
         cachedProfileDetails = buildProfileDetails({ metadata });
-        cachedAvatarDataUrl = cachedProfileDetails.avatarDataUrl ?? null;
+        const resolvedAvatarUrl = await resolveAvatarUrl(cachedProfileDetails);
+        cachedProfileDetails.avatarDataUrl = resolvedAvatarUrl;
+        cachedAvatarDataUrl = resolvedAvatarUrl;
+        cachedAvatarStoragePath = cachedProfileDetails.avatarStoragePath ?? null;
         return;
       }
       throw error;
@@ -1360,7 +1418,9 @@ async function loadProfileDetailsFromDatabase() {
       detailsData: data ?? {},
       metadata,
     });
-    cachedAvatarDataUrl = cachedProfileDetails.avatarDataUrl ?? null;
+    const resolvedAvatarUrl = await resolveAvatarUrl(cachedProfileDetails);
+    cachedProfileDetails.avatarDataUrl = resolvedAvatarUrl;
+    cachedAvatarDataUrl = resolvedAvatarUrl;
     cachedAvatarStoragePath = cachedProfileDetails.avatarStoragePath ?? null;
     profileDetailsSupported = true;
   } catch (error) {
@@ -1368,14 +1428,19 @@ async function loadProfileDetailsFromDatabase() {
     if (isProfileDetailsUnsupportedError(error)) {
       profileDetailsSupported = false;
       cachedProfileDetails = buildProfileDetails({ metadata });
-      cachedAvatarDataUrl = cachedProfileDetails.avatarDataUrl ?? null;
+      const resolvedAvatarUrl = await resolveAvatarUrl(cachedProfileDetails);
+      cachedProfileDetails.avatarDataUrl = resolvedAvatarUrl;
+      cachedAvatarDataUrl = resolvedAvatarUrl;
+      cachedAvatarStoragePath = cachedProfileDetails.avatarStoragePath ?? null;
       console.warn("Tabel profile_details tidak tersedia. Menggunakan metadata pengguna.");
       return;
     }
 
     console.error("Gagal memuat detail profil", error);
     cachedProfileDetails = buildProfileDetails({ metadata });
-    cachedAvatarDataUrl = cachedProfileDetails.avatarDataUrl ?? null;
+    const resolvedAvatarUrl = await resolveAvatarUrl(cachedProfileDetails);
+    cachedProfileDetails.avatarDataUrl = resolvedAvatarUrl;
+    cachedAvatarDataUrl = resolvedAvatarUrl;
     cachedAvatarStoragePath = cachedProfileDetails.avatarStoragePath ?? null;
   }
 }
@@ -1539,9 +1604,16 @@ async function saveAvatarToDatabase({ dataUrl, file }) {
     }
   }
 
+  const shouldPersistDirectUrl =
+    !storagePath ||
+    isDataUrl(avatarUrl) ||
+    (typeof avatarUrl === "string" && !avatarUrl.includes("token="));
+
+  const avatarDataUrlForPersistence = shouldPersistDirectUrl ? avatarUrl : null;
+
   const payload = {
     user_id: cachedSession.user.id,
-    avatar_data_url: avatarUrl,
+    avatar_data_url: avatarDataUrlForPersistence,
     avatar_storage_path: storagePath,
   };
 
@@ -1557,7 +1629,7 @@ async function saveAvatarToDatabase({ dataUrl, file }) {
 
     if (error?.code === "23503") {
       await seedProfileTablesFromMetadata({
-        avatarDataUrl: avatarUrl,
+        avatarDataUrl: avatarDataUrlForPersistence,
         avatarStoragePath: storagePath,
       });
       if (profileDetailsSupported) {
@@ -1576,20 +1648,32 @@ async function saveAvatarToDatabase({ dataUrl, file }) {
     }
   }
 
+  const accessibleAvatarUrl = await resolveAvatarUrl({
+    avatarDataUrl:
+      avatarDataUrlForPersistence ?? avatarUrl ?? dataUrl ?? cachedAvatarDataUrl,
+    avatarStoragePath: storagePath,
+  });
+
   const currentData = getCurrentProfileData();
   currentData.avatarStoragePath = storagePath;
 
   if (!stored) {
-    await persistProfileMetadata(currentData, avatarUrl, storagePath);
-  } else {
-    persistProfileMetadata(currentData, avatarUrl, storagePath).catch(
-      (error) => {
-        console.warn("Gagal memperbarui metadata avatar", error);
-      }
+    await persistProfileMetadata(
+      currentData,
+      avatarDataUrlForPersistence,
+      storagePath
     );
+  } else {
+    persistProfileMetadata(
+      currentData,
+      avatarDataUrlForPersistence,
+      storagePath
+    ).catch((error) => {
+      console.warn("Gagal memperbarui metadata avatar", error);
+    });
   }
 
-  cachedAvatarDataUrl = avatarUrl;
+  cachedAvatarDataUrl = accessibleAvatarUrl;
   cachedAvatarStoragePath = storagePath;
 
   if (cachedProfileDetails) {
@@ -1684,9 +1768,22 @@ async function uploadAvatarFile(file) {
     .from(AVATAR_BUCKET)
     .getPublicUrl(storagePath);
 
+  let publicUrl = data?.publicUrl ?? null;
+
+  if (!publicUrl) {
+    try {
+      const { data: signedData } = await supabaseClient.storage
+        .from(AVATAR_BUCKET)
+        .createSignedUrl(storagePath, AVATAR_SIGNED_URL_DURATION);
+      publicUrl = signedData?.signedUrl ?? null;
+    } catch (error) {
+      console.warn("Gagal membuat signed URL avatar", error);
+    }
+  }
+
   return {
     storagePath,
-    publicUrl: data?.publicUrl ?? null,
+    publicUrl,
   };
 }
 

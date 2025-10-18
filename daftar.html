@@ -88,13 +88,16 @@
 
                 const result = await signUp(email, password, fullName);
 
-                if (result?.requiresEmailConfirmation) {
+                if (result?.user) {
                     const confirmationUrl = new URL("thankyou.html", window.location.href);
                     confirmationUrl.searchParams.set("email", email);
+
+                    if (!result?.requiresEmailConfirmation) {
+                        confirmationUrl.searchParams.set("status", "active");
+                    }
+
                     window.location.href = confirmationUrl.toString();
                     return;
-                } else {
-                    window.location.href = "dashboard.html";
                 }
             } catch (error) {
                 console.error(error);

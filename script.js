@@ -898,7 +898,10 @@ function renderNavbar() {
       </button>
       <div class="nav-dropdown" id="nav-profile-menu" hidden>
         <div class="nav-user-name">${displayName}</div>
-        <a href="profile.html">Profil</a>
+        <a href="dashboard.html">Dasbor</a>
+        <a href="profile.html">Profil Saya</a>
+        <a href="courses.html">Kursus Saya</a>
+        <a href="certificates.html">Sertifikat</a>
         <a href="profile.html#pengaturan-akun">Pengaturan</a>
         <button type="button" class="dropdown-logout" id="logout-button">Logout</button>
       </div>

@@ -81,16 +81,27 @@ CREATE TABLE IF NOT EXISTS courses (
   level text,
   hours int,
   rating numeric(2,1),
-  instructor text
+  instructor text,
+  is_active boolean DEFAULT true
 );
+
+ALTER TABLE courses
+  ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true;
 
 CREATE TABLE IF NOT EXISTS enrollments (
   id bigserial PRIMARY KEY,
   user_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
   course_id bigint REFERENCES courses(id) ON DELETE CASCADE,
-  status text DEFAULT 'pending',
-  created_at timestamp DEFAULT now()
+  status text DEFAULT 'active',
+  created_at timestamp DEFAULT now(),
+  enrolled_at timestamp DEFAULT now()
 );
+
+ALTER TABLE enrollments
+  ADD COLUMN IF NOT EXISTS enrolled_at timestamp DEFAULT now();
+
+ALTER TABLE enrollments
+  ALTER COLUMN status SET DEFAULT 'active';
 
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profile_details ENABLE ROW LEVEL SECURITY;

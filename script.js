@@ -63,6 +63,15 @@ const SAMPLE_COURSES = [
 
 const AUTH_SESSION_MISSING = "AUTH_SESSION_MISSING";
 
+const TEKNIK_PERTAMBANGAN_SLUG = "teknik-pertambangan";
+const TEKNIK_PERTAMBANGAN_TITLE = "Teknik Pertambangan";
+const TEKNIK_PERTAMBANGAN_REDIRECT = "courses.html#kursus-saya";
+
+let teknikPertambanganCourseId = null;
+let teknikPertambanganCourseLoaded = false;
+let teknikEnrollButton = null;
+let teknikEnrollLoading = false;
+
 function isAuthSessionMissingError(error) {
   if (!error) {
     return false;
@@ -88,24 +97,76 @@ function toAuthSessionMissingError(error) {
   return sessionError;
 }
 
-export async function loadCourses() {
-  const { data, error } = await supabaseClient
-    .from("courses")
-    .select("id, title, category, level, hours, rating, instructor")
-    .order("id", { ascending: true });
-
-  if (error) {
-    throw error;
+function isColumnMissingError(error, columnName) {
+  if (!error || !columnName) {
+    return false;
   }
 
-  if (data && data.length > 0) {
-    return data;
+  const message = (error.message ?? "").toLowerCase();
+  const details = (error.details ?? "").toLowerCase();
+  const hint = (error.hint ?? "").toLowerCase();
+  const code = (error.code ?? "").toString();
+  const column = columnName.toLowerCase();
+
+  if (code === "42703") {
+    return true;
+  }
+
+  const combined = `${message} ${details} ${hint}`;
+  return (
+    combined.includes("column") &&
+    combined.includes(column) &&
+    (combined.includes("does not exist") || combined.includes("unknown"))
+  );
+}
+
+export async function loadCourses() {
+  const baseColumns = "id, title, category, level, hours, rating, instructor";
+  const columnsWithActive = `${baseColumns}, is_active`;
+
+  const { data, error } = await supabaseClient
+    .from("courses")
+    .select(columnsWithActive)
+    .order("id", { ascending: true });
+
+  let courses = data ?? [];
+
+  if (error) {
+    if (isColumnMissingError(error, "is_active")) {
+      const fallback = await supabaseClient
+        .from("courses")
+        .select(baseColumns)
+        .order("id", { ascending: true });
+
+      if (fallback.error) {
+        throw fallback.error;
+      }
+
+      courses = fallback.data ?? [];
+    } else {
+      throw error;
+    }
+  }
+
+  const activeCourses = courses.filter((course) => course.is_active !== false);
+
+  if (activeCourses.length > 0) {
+    return activeCourses;
   }
 
   return SAMPLE_COURSES;
 }
 
-export async function enroll(courseId) {
+export async function enroll(courseId, options = {}) {
+  const {
+    status = "active",
+    enrolledAt,
+    onAlreadyEnrolled,
+    onSuccess,
+    showSuccessAlert = true,
+    successMessage = "Pendaftaran kursus berhasil!",
+  } = options ?? {};
+
   const session = await getSession();
 
   if (!session) {
@@ -117,7 +178,7 @@ export async function enroll(courseId) {
 
   const { data: existing, error: existingError } = await supabaseClient
     .from("enrollments")
-    .select("id, status")
+    .select("id, status, course_id, enrolled_at")
     .eq("user_id", userId)
     .eq("course_id", courseId)
     .maybeSingle();
@@ -129,33 +190,67 @@ export async function enroll(courseId) {
   }
 
   if (existing) {
-    alert("Kamu sudah mendaftar kursus ini.");
+    if (typeof onAlreadyEnrolled === "function") {
+      onAlreadyEnrolled(existing);
+    } else {
+      alert("Kamu sudah terdaftar di kursus ini.");
+    }
     return existing;
   }
 
-  const { data, error } = await supabaseClient
+  const payload = {
+    user_id: userId,
+    course_id: courseId,
+    status,
+    enrolled_at: enrolledAt ?? new Date().toISOString(),
+  };
+
+  const selectColumns =
+    "id, status, course_id, enrolled_at, created_at, courses(id, title)";
+
+  let insertResult = await supabaseClient
     .from("enrollments")
-    .insert({
-      user_id: userId,
-      course_id: courseId,
-      status: "pending",
-    })
-    .select("*")
+    .insert(payload)
+    .select(selectColumns)
     .maybeSingle();
 
-  if (error) {
-    console.error(error);
+  if (insertResult.error && isColumnMissingError(insertResult.error, "enrolled_at")) {
+    const fallbackPayload = { ...payload };
+    delete fallbackPayload.enrolled_at;
+
+    insertResult = await supabaseClient
+      .from("enrollments")
+      .insert(fallbackPayload)
+      .select("id, status, course_id, created_at, courses(id, title)")
+      .maybeSingle();
+
+    if (!insertResult.error) {
+      insertResult.data = {
+        ...insertResult.data,
+        enrolled_at: insertResult.data?.created_at ?? null,
+      };
+    }
+  }
+
+  if (insertResult.error) {
+    console.error(insertResult.error);
     alert("Tidak dapat mendaftar kursus. Coba lagi nanti.");
     return null;
   }
 
-  alert("Pendaftaran kursus berhasil! Status saat ini: pending.");
+  if (showSuccessAlert) {
+    alert(successMessage);
+  }
 
   if (typeof refreshMyEnrollmentsUI === "function") {
     refreshMyEnrollmentsUI();
   }
 
-  return data;
+  if (typeof onSuccess === "function") {
+    onSuccess(insertResult.data);
+  }
+
+  return insertResult.data;
 }
 
 export async function myEnrollments() {
@@ -165,22 +260,55 @@ export async function myEnrollments() {
     return [];
   }
 
-  const { data, error } = await supabaseClient
+  const courseFields = "id, title, category, level, hours, rating, instructor";
+  const fullCourseFields = `${courseFields}, is_active`;
+
+  const query = supabaseClient
     .from("enrollments")
     .select(
-      "id, status, created_at, course_id, courses(id, title, category, level, hours, rating, instructor)"
+      `id, status, enrolled_at, created_at, course_id, courses!inner(${fullCourseFields})`
     )
     .eq("user_id", session.user.id)
+    .eq("courses.is_active", true)
+    .order("enrolled_at", { ascending: false })
     .order("created_at", { ascending: false });
 
+  const { data, error } = await query;
+
+  let enrollmentsData = data ?? [];
+
   if (error) {
-    throw error;
+    if (
+      isColumnMissingError(error, "is_active") ||
+      isColumnMissingError(error, "enrolled_at")
+    ) {
+      const fallbackQuery = supabaseClient
+        .from("enrollments")
+        .select(
+          `id, status, created_at, course_id, courses!inner(${courseFields})`
+        )
+        .eq("user_id", session.user.id)
+        .order("created_at", { ascending: false });
+
+      const { data: fallbackData, error: fallbackError } = await fallbackQuery;
+
+      if (fallbackError) {
+        throw fallbackError;
+      }
+
+      enrollmentsData = fallbackData ?? [];
+    } else {
+      throw error;
+    }
   }
 
-  return (data ?? []).map((item) => ({
-    ...item,
-    course: item.courses,
-  }));
+  return enrollmentsData
+    .map((item) => ({
+      ...item,
+      enrolled_at: item.enrolled_at ?? item.created_at ?? null,
+      course: item.courses,
+    }))
+    .filter((item) => item.course && item.course.is_active !== false);
 }
 
 let cachedSession = null;
@@ -225,6 +353,198 @@ let selectedAvatarDataUrl = null;
 let selectedAvatarFile = null;
 let cachedAvatarStoragePath = null;
 let authLoading = false;
+
+async function fetchCourseByColumn(columnName, value) {
+  if (!supabaseClient) {
+    return null;
+  }
+
+  try {
+    const { data, error } = await supabaseClient
+      .from("courses")
+      .select("id, title, is_active")
+      .eq(columnName, value)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    return data ?? null;
+  } catch (error) {
+    if (isColumnMissingError(error, columnName)) {
+      console.warn(
+        `Kolom ${columnName} tidak tersedia di tabel courses. Menggunakan metode cadangan.`
+      );
+      return null;
+    }
+
+    if (isColumnMissingError(error, "is_active")) {
+      console.warn(
+        "Kolom is_active tidak tersedia di tabel courses. Mengambil data tanpa status aktif."
+      );
+
+      const { data: fallbackData, error: fallbackError } = await supabaseClient
+        .from("courses")
+        .select("id, title")
+        .eq(columnName, value)
+        .maybeSingle();
+
+      if (fallbackError) {
+        throw fallbackError;
+      }
+
+      return fallbackData ?? null;
+    }
+
+    throw error;
+  }
+}
+
+async function ensureTeknikPertambanganCourse() {
+  if (teknikPertambanganCourseLoaded) {
+    return teknikPertambanganCourseId;
+  }
+
+  teknikPertambanganCourseLoaded = true;
+
+  try {
+    let course = await fetchCourseByColumn("slug", TEKNIK_PERTAMBANGAN_SLUG);
+
+    if (!course) {
+      course = await fetchCourseByColumn("title", TEKNIK_PERTAMBANGAN_TITLE);
+    }
+
+    if (!course || course.is_active === false) {
+      teknikPertambanganCourseId = null;
+    } else {
+      teknikPertambanganCourseId = course.id;
+    }
+
+    return teknikPertambanganCourseId;
+  } catch (error) {
+    teknikPertambanganCourseLoaded = false;
+    throw error;
+  }
+}
+
+function isUserEnrolledInTeknik() {
+  if (!cachedSession || !teknikPertambanganCourseId) {
+    return false;
+  }
+
+  return cachedEnrollments.some(
+    (item) => String(item.course_id) === String(teknikPertambanganCourseId)
+  );
+}
+
+function syncTeknikEnrollButtonState() {
+  if (!teknikEnrollButton) {
+    return;
+  }
+
+  if (teknikEnrollLoading) {
+    teknikEnrollButton.textContent = "Memproses...";
+    teknikEnrollButton.disabled = true;
+    return;
+  }
+
+  if (!teknikPertambanganCourseLoaded) {
+    teknikEnrollButton.textContent = "Memuat...";
+    teknikEnrollButton.disabled = true;
+    return;
+  }
+
+  if (!teknikPertambanganCourseId) {
+    teknikEnrollButton.textContent = "Kursus Tidak Tersedia";
+    teknikEnrollButton.disabled = true;
+    return;
+  }
+
+  if (!cachedSession) {
+    teknikEnrollButton.textContent = "Daftar Sekarang";
+    teknikEnrollButton.disabled = false;
+    return;
+  }
+
+  if (isUserEnrolledInTeknik()) {
+    teknikEnrollButton.textContent = "Lanjutkan Belajar";
+    teknikEnrollButton.disabled = false;
+    return;
+  }
+
+  teknikEnrollButton.textContent = "Daftar Sekarang";
+  teknikEnrollButton.disabled = false;
+}
+
+async function handleTeknikEnrollButtonClick() {
+  if (!teknikPertambanganCourseLoaded) {
+    try {
+      await ensureTeknikPertambanganCourse();
+    } catch (error) {
+      console.error(error);
+      alert(
+        "Kursus Teknik Pertambangan belum tersedia. Coba lagi beberapa saat lagi."
+      );
+      syncTeknikEnrollButtonState();
+      return;
+    }
+  }
+
+  if (!teknikPertambanganCourseId) {
+    syncTeknikEnrollButtonState();
+    return;
+  }
+
+  if (!cachedSession) {
+    window.location.href = "login.html";
+    return;
+  }
+
+  if (isUserEnrolledInTeknik()) {
+    window.location.href = TEKNIK_PERTAMBANGAN_REDIRECT;
+    return;
+  }
+
+  teknikEnrollLoading = true;
+  syncTeknikEnrollButtonState();
+
+  try {
+    const result = await enroll(teknikPertambanganCourseId, {
+      showSuccessAlert: false,
+      successMessage: "",
+    });
+
+    if (result) {
+      alert("Kamu berhasil mendaftar Teknik Pertambangan!");
+      window.location.href = TEKNIK_PERTAMBANGAN_REDIRECT;
+    }
+  } catch (error) {
+    console.error(error);
+    alert(
+      "Tidak dapat mendaftarkanmu ke Teknik Pertambangan saat ini. Coba lagi nanti."
+    );
+  } finally {
+    teknikEnrollLoading = false;
+    syncTeknikEnrollButtonState();
+  }
+}
+
+async function initializeTeknikPertambanganCTA() {
+  if (!teknikEnrollButton) {
+    return;
+  }
+
+  teknikEnrollButton.addEventListener("click", handleTeknikEnrollButtonClick);
+
+  try {
+    await ensureTeknikPertambanganCourse();
+  } catch (error) {
+    console.error(error);
+  }
+
+  syncTeknikEnrollButtonState();
+}
 
 const AVATAR_CACHE_KEY = "edlevator:avatar-cache";
 
@@ -1482,6 +1802,7 @@ async function refreshMyEnrollmentsUI() {
       message.className = "empty-state";
       enrollmentsContainer.appendChild(message);
     }
+    syncTeknikEnrollButtonState();
     return;
   }
 
@@ -1499,6 +1820,7 @@ async function refreshMyEnrollmentsUI() {
       message.className = "empty-state";
       enrollmentsContainer.appendChild(message);
     }
+    syncTeknikEnrollButtonState();
     return;
   }
 
@@ -1506,14 +1828,16 @@ async function refreshMyEnrollmentsUI() {
   renderCertificates();
 
   if (!hasContainer) {
+    syncTeknikEnrollButtonState();
     return;
   }
 
   if (!cachedEnrollments.length) {
     const message = document.createElement("p");
-    message.textContent = "Belum ada kursus yang kamu daftar.";
+    message.textContent = "Belum ada kursus yang diikuti.";
     message.className = "empty-state";
     enrollmentsContainer.appendChild(message);
+    syncTeknikEnrollButtonState();
     return;
   }
 
@@ -1532,12 +1856,13 @@ async function refreshMyEnrollmentsUI() {
         <div class="course-meta">
           <span>${item.course?.level ?? ""}</span>
           <span>${formatHours(item.course?.hours ?? 0)}</span>
-          <span>${formatDate(item.created_at)}</span>
+          <span>${item.enrolled_at ? formatDate(item.enrolled_at) : ""}</span>
         </div>
       </div>
     `;
     enrollmentsContainer.appendChild(card);
   });
+  syncTeknikEnrollButtonState();
 }
 
 async function updateSession() {
@@ -2816,6 +3141,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   navLinksList = document.getElementById("primary-navigation");
   navContainerEl = document.querySelector(".navbar");
   enrollmentsContainer = document.getElementById("my-enrollments");
+  teknikEnrollButton = document.getElementById("teknik-enroll-button");
   dashboardMessage = document.getElementById("dashboard-message");
   dashboardCoursesList = document.getElementById("course-list");
   searchInputEl = document.getElementById("search-input");
@@ -2850,6 +3176,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupMobileNavToggle();
   initializeEventListeners();
   initializeProfileForms();
+  initializeTeknikPertambanganCTA();
   const sessionPromise = updateSession();
 
   try {

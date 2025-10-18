@@ -831,6 +831,11 @@ footer {
     font-size: 0.85rem;
 }
 
+.btn.large {
+    padding: clamp(0.9rem, 0.7vw + 0.95rem, 1.15rem) clamp(1.75rem, 1.4vw + 1.85rem, 2.6rem);
+    font-size: 1.05rem;
+}
+
 .form-feedback {
     margin-top: 1rem;
     text-align: center;
@@ -1501,6 +1506,18 @@ footer {
 
 .program-detail-hero__heading h1 {
     margin-bottom: 0.75rem;
+}
+
+.program-detail-hero__actions {
+    margin-top: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.program-detail-hero__actions .btn {
+    min-width: 220px;
+    justify-content: center;
 }
 
 .program-detail-hero__highlights {

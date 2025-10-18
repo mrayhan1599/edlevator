@@ -1339,16 +1339,37 @@ async function saveAvatarToDatabase({ dataUrl, file }) {
   let storagePath = cachedAvatarStoragePath || null;
 
   if (file) {
-    const uploadResult = await uploadAvatarFile(file);
-    avatarUrl = uploadResult.publicUrl;
-    storagePath = uploadResult.storagePath;
+    try {
+      const uploadResult = await uploadAvatarFile(file);
+      avatarUrl = uploadResult.publicUrl;
+      storagePath = uploadResult.storagePath;
 
-    if (
-      cachedAvatarStoragePath &&
-      cachedAvatarStoragePath !== storagePath &&
-      avatarUrl
-    ) {
-      deleteAvatarFromStorage(cachedAvatarStoragePath);
+      if (
+        cachedAvatarStoragePath &&
+        storagePath &&
+        cachedAvatarStoragePath !== storagePath &&
+        avatarUrl
+      ) {
+        deleteAvatarFromStorage(cachedAvatarStoragePath);
+      }
+    } catch (error) {
+      const errorMessage = error?.message ?? "";
+      const canFallback =
+        Boolean(dataUrl) &&
+        (errorMessage === "AVATAR_BUCKET_MISSING" ||
+          errorMessage === "Supabase storage tidak tersedia" ||
+          isAvatarBucketMissingError(error?.cause));
+
+      if (!canFallback) {
+        throw error;
+      }
+
+      console.warn(
+        "Supabase storage tidak tersedia. Menyimpan avatar langsung di metadata pengguna.",
+        error
+      );
+      avatarUrl = dataUrl;
+      storagePath = null;
     }
   }
 

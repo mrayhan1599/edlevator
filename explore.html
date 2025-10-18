@@ -42,9 +42,27 @@
 
     <main>
         <header class="explore-hero">
-            <div class="container">
-                <h1>Eksplorasi Jurusan Kampus Favoritmu</h1>
-                <p>Temukan jurusan impian lewat kurasi kelas IPA dan IPS yang disusun dengan mentor berpengalaman. Pilih rumpun di bawah ini, lalu jelajahi sub-kategori yang sesuai minatmu.</p>
+            <div class="explore-hero__container">
+                <figure class="explore-hero__illustration" aria-hidden="true">
+                    <svg viewBox="0 0 360 200" xmlns="http://www.w3.org/2000/svg">
+                        <title>Ilustrasi eksplorasi rumpun jurusan</title>
+                        <defs>
+                            <linearGradient id="exploreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.2" />
+                                <stop offset="100%" stop-color="#22d3ee" stop-opacity="0.25" />
+                            </linearGradient>
+                        </defs>
+                        <rect x="20" y="20" width="320" height="160" rx="32" fill="url(#exploreGradient)" />
+                        <circle cx="110" cy="80" r="34" fill="#0ea5e9" opacity="0.18" />
+                        <circle cx="250" cy="120" r="46" fill="#22c55e" opacity="0.18" />
+                        <path d="M80 150c30-28 60-20 100-46 40-26 64-24 100 6" fill="none" stroke="#0284c7" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="12 16" opacity="0.4" />
+                        <path d="M110 150c18-18 38-12 64-30 26-18 42-18 66 4" fill="none" stroke="#10b981" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" opacity="0.45" />
+                    </svg>
+                </figure>
+                <div class="explore-hero__content">
+                    <h1 id="explore-hero-title">Eksplorasi Jurusan</h1>
+                    <p id="explore-hero-subtitle">Temukan jurusan impian lewat kurasi kelas IPA dan IPS yang disusun dengan mentor berpengalaman. Pilih rumpun di bawah ini, lalu jelajahi sub-kategori yang sesuai minatmu.</p>
+                </div>
                 <div class="explore-tabs" role="tablist" aria-label="Pilihan rumpun jurusan">
                     <button type="button" class="explore-tab is-active" role="tab" aria-selected="true" data-track="ipa">Jurusan IPA</button>
                     <button type="button" class="explore-tab" role="tab" aria-selected="false" data-track="ips">Jurusan IPS</button>
@@ -53,11 +71,11 @@
         </header>
 
         <section class="explore-section" aria-labelledby="explore-track-heading">
-            <div class="container">
+            <div class="explore-section__container">
                 <header class="explore-section-header">
                     <div>
                         <p class="badge" id="explore-track-label">Jurusan IPA</p>
-                        <h2 id="explore-track-heading">Pilih sub-kategori yang ingin kamu jelajahi</h2>
+                        <h2 id="explore-track-heading">Sub-kategori unggulan yang bisa kamu jelajahi</h2>
                     </div>
                     <p class="explore-section-subtitle">Setiap sub-kategori dilengkapi highlight kompetensi, contoh mata kuliah, dan jalur karier populer untuk membantumu mengambil keputusan.</p>
                 </header>

@@ -18,6 +18,7 @@ CREATE TABLE profile_details (
   location text,
   bio text,
   avatar_data_url text,
+  avatar_storage_path text,
   updated_at timestamp DEFAULT now()
 );
 
@@ -143,3 +144,80 @@ INSERT INTO courses (title, category, level, hours, rating, instructor) VALUES
   ('Branding Visual untuk Startup', 'Desain Komunikasi Visual', 'Menengah', 16, 4.7, 'Aditia Permana, S.Ds.'),
   ('Analisis Data Bisnis', 'Manajemen Bisnis', 'Lanjutan', 22, 4.5, 'Fadhil Ramadhan, M.BA'),
   ('UI/UX Research Fundamentals', 'Desain Komunikasi Visual', 'Pemula', 14, 4.4, 'Natasya Lingga, M.Ds.');
+
+-- Bucket penyimpanan avatar (dibuat hanya jika belum ada)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM storage.buckets WHERE id = 'avatars'
+  ) THEN
+    PERFORM storage.create_bucket('avatars', public := true);
+  END IF;
+END $$;
+
+-- Kebijakan akses bucket avatar
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_policies
+    WHERE schemaname = 'storage'
+      AND tablename = 'objects'
+      AND policyname = 'Avatar publik'
+  ) THEN
+    CREATE POLICY "Avatar publik" ON storage.objects
+    FOR SELECT USING (bucket_id = 'avatars');
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_policies
+    WHERE schemaname = 'storage'
+      AND tablename = 'objects'
+      AND policyname = 'Pengguna unggah avatar'
+  ) THEN
+    CREATE POLICY "Pengguna unggah avatar" ON storage.objects
+    FOR INSERT
+    WITH CHECK (
+      bucket_id = 'avatars' AND auth.role() = 'authenticated' AND auth.uid() = owner
+    );
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_policies
+    WHERE schemaname = 'storage'
+      AND tablename = 'objects'
+      AND policyname = 'Pengguna ubah avatar'
+  ) THEN
+    CREATE POLICY "Pengguna ubah avatar" ON storage.objects
+    FOR UPDATE USING (
+      bucket_id = 'avatars' AND auth.uid() = owner
+    )
+    WITH CHECK (
+      bucket_id = 'avatars' AND auth.uid() = owner
+    );
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_policies
+    WHERE schemaname = 'storage'
+      AND tablename = 'objects'
+      AND policyname = 'Pengguna hapus avatar'
+  ) THEN
+    CREATE POLICY "Pengguna hapus avatar" ON storage.objects
+    FOR DELETE USING (
+      bucket_id = 'avatars' AND auth.uid() = owner
+    );
+  END IF;
+END $$;

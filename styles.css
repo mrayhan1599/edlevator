@@ -563,17 +563,21 @@ footer {
     width: 44px;
     height: 44px;
     border-radius: 12px;
-    border: 1px solid rgba(79, 70, 229, 0.2);
-    background: transparent;
-    color: var(--text-light);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    background: #fff;
+    color: var(--text-dark);
     padding: 0;
-    box-shadow: none;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease,
+        box-shadow 0.2s ease;
 }
 
 .nav-toggle:hover,
 .nav-toggle:focus {
     color: var(--primary);
-    background: rgba(79, 70, 229, 0.05);
+    background: rgba(79, 70, 229, 0.08);
+    border-color: rgba(79, 70, 229, 0.25);
+    box-shadow: 0 8px 22px rgba(79, 70, 229, 0.16);
 }
 
 .nav-toggle:focus-visible {
@@ -629,12 +633,13 @@ footer {
     width: 44px;
     height: 44px;
     border-radius: 50%;
-    background: transparent;
-    border: 2px solid rgba(79, 70, 229, 0.2);
+    background: #fff;
+    border: 2px solid rgba(15, 23, 42, 0.08);
     padding: 0;
     color: var(--primary);
     box-shadow: none;
     transition: none;
+    overflow: hidden;
 }
 
 .avatar-button:hover,
@@ -655,13 +660,14 @@ footer {
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    background-color: rgba(79, 70, 229, 0.12);
+    background-color: #f1f5f9;
     background-size: cover;
     background-position: center;
-    color: var(--primary);
-    font-weight: 700;
+    color: var(--text-dark);
+    font-weight: 600;
     font-size: 1rem;
     text-transform: uppercase;
+    letter-spacing: 0.03em;
 }
 
 .avatar-visual.has-image {
@@ -799,19 +805,22 @@ footer {
     width: clamp(96px, 12vw + 60px, 120px);
     height: clamp(96px, 12vw + 60px, 120px);
     border-radius: 50%;
-    background: rgba(79, 70, 229, 0.1);
+    aspect-ratio: 1 / 1;
+    background: linear-gradient(135deg, #f8fafc, #e2e8f0);
     display: grid;
     place-items: center;
-    color: var(--primary);
-    font-weight: 700;
+    color: var(--text-dark);
+    font-weight: 600;
     font-size: 1.5rem;
     overflow: hidden;
     background-size: cover;
     background-position: center;
+    border: 4px solid #fff;
+    box-shadow: 0 10px 26px rgba(15, 23, 42, 0.16);
 }
 
 .avatar-preview.has-image {
-    background: transparent;
+    background: #fff;
 }
 
 .file-input {
@@ -1210,6 +1219,12 @@ footer {
 @media (max-width: 900px) {
     .sidebar {
         position: static;
+    }
+}
+
+@media (min-width: 769px) {
+    .nav-toggle {
+        display: none !important;
     }
 }
 

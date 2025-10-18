@@ -194,6 +194,17 @@ let profileInfoFeedbackEl = null;
 let certificatesContainer = null;
 let profileEmailInput = null;
 let selectedAvatarDataUrl = null;
+let selectedAvatarFile = null;
+let cachedAvatarStoragePath = null;
+
+const AVATAR_BUCKET = "avatars";
+const MAX_AVATAR_FILE_SIZE = 2 * 1024 * 1024; // 2 MB
+const ALLOWED_AVATAR_MIME_TYPES = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/jpg",
+  "image/webp",
+]);
 
 function formatHours(hours) {
   return `${hours} jam`;
@@ -292,6 +303,10 @@ function buildProfileDetails({ detailsData = {}, metadata = {} } = {}) {
     detailsData?.avatar_data_url ??
     metadataValue(metadata, "avatar_data_url") ??
     null;
+  const avatarStoragePathSource =
+    detailsData?.avatar_storage_path ??
+    metadataValue(metadata, "avatar_storage_path") ??
+    null;
 
   return {
     fullName: resolvedName,
@@ -306,6 +321,11 @@ function buildProfileDetails({ detailsData = {}, metadata = {} } = {}) {
     avatarDataUrl:
       typeof avatarSource === "string" && avatarSource.trim() !== ""
         ? avatarSource
+        : null,
+    avatarStoragePath:
+      typeof avatarStoragePathSource === "string" &&
+      avatarStoragePathSource.trim() !== ""
+        ? avatarStoragePathSource
         : null,
   };
 }
@@ -330,6 +350,8 @@ function getCurrentProfileData() {
     company: details.company ?? metadata.company ?? "",
     location: details.location ?? metadata.location ?? "",
     bio: details.bio ?? metadata.bio ?? "",
+    avatarStoragePath:
+      details.avatarStoragePath ?? metadata.avatar_storage_path ?? null,
   };
 }
 
@@ -347,7 +369,11 @@ function isProfileDetailsUnsupportedError(error) {
   return message.includes("profile_details");
 }
 
-async function persistProfileMetadata(data, avatarDataUrl = cachedAvatarDataUrl) {
+async function persistProfileMetadata(
+  data,
+  avatarDataUrl = cachedAvatarDataUrl,
+  avatarStoragePath = cachedAvatarStoragePath
+) {
   if (!cachedSession?.user?.id || !supabaseClient) {
     return;
   }
@@ -363,6 +389,9 @@ async function persistProfileMetadata(data, avatarDataUrl = cachedAvatarDataUrl)
     location: normalizeProfileValue(data.location),
     bio: normalizeProfileValue(data.bio),
     avatar_data_url: normalizeProfileValue(avatarDataUrl),
+    avatar_storage_path: normalizeProfileValue(
+      data.avatarStoragePath ?? avatarStoragePath
+    ),
   };
 
   const { data: result, error } = await supabaseClient.auth.updateUser({
@@ -1028,6 +1057,7 @@ async function updateSession() {
     } else {
       cachedProfileDetails = null;
       cachedAvatarDataUrl = null;
+      cachedAvatarStoragePath = null;
       profileDetailsSupported = true;
     }
   } catch (error) {
@@ -1036,6 +1066,7 @@ async function updateSession() {
     cachedProfile = null;
     cachedProfileDetails = null;
     cachedAvatarDataUrl = null;
+    cachedAvatarStoragePath = null;
   }
 
   renderNavbar();
@@ -1133,7 +1164,7 @@ async function loadProfileDetailsFromDatabase() {
     const { data, error } = await supabaseClient
       .from("profile_details")
       .select(
-        "birthdate, gender, track, major, occupation, company, location, bio, avatar_data_url"
+        "birthdate, gender, track, major, occupation, company, location, bio, avatar_data_url, avatar_storage_path"
       )
       .eq("user_id", cachedSession.user.id)
       .maybeSingle();
@@ -1153,6 +1184,8 @@ async function loadProfileDetailsFromDatabase() {
       metadata,
     });
     cachedAvatarDataUrl = cachedProfileDetails.avatarDataUrl ?? null;
+    cachedAvatarStoragePath = cachedProfileDetails.avatarStoragePath ?? null;
+    profileDetailsSupported = true;
   } catch (error) {
     const metadata = cachedSession?.user?.user_metadata ?? {};
     if (isProfileDetailsUnsupportedError(error)) {
@@ -1166,6 +1199,7 @@ async function loadProfileDetailsFromDatabase() {
     console.error("Gagal memuat detail profil", error);
     cachedProfileDetails = buildProfileDetails({ metadata });
     cachedAvatarDataUrl = cachedProfileDetails.avatarDataUrl ?? null;
+    cachedAvatarStoragePath = cachedProfileDetails.avatarStoragePath ?? null;
   }
 }
 
@@ -1198,6 +1232,8 @@ async function saveProfileDetailsToDatabase(data) {
     company: normalize(data.company),
     location: normalize(data.location),
     bio: normalize(data.bio),
+    avatar_data_url: cachedAvatarDataUrl ?? null,
+    avatar_storage_path: cachedAvatarStoragePath ?? null,
   };
 
   const { error: profileError } = await supabaseClient
@@ -1227,9 +1263,17 @@ async function saveProfileDetailsToDatabase(data) {
   }
 
   if (!detailsSaved) {
-    await persistProfileMetadata(data, cachedAvatarDataUrl);
+    await persistProfileMetadata(
+      data,
+      cachedAvatarDataUrl,
+      cachedAvatarStoragePath
+    );
   } else {
-    persistProfileMetadata(data, cachedAvatarDataUrl).catch((error) => {
+    persistProfileMetadata(
+      data,
+      cachedAvatarDataUrl,
+      cachedAvatarStoragePath
+    ).catch((error) => {
       console.warn("Gagal menyelaraskan metadata profil", error);
     });
   }
@@ -1240,17 +1284,36 @@ async function saveProfileDetailsToDatabase(data) {
   cachedProfileDetails = {
     ...data,
     avatarDataUrl: cachedAvatarDataUrl ?? null,
+    avatarStoragePath: cachedAvatarStoragePath ?? null,
   };
 }
 
-async function saveAvatarToDatabase(dataUrl) {
+async function saveAvatarToDatabase({ dataUrl, file }) {
   if (!cachedSession?.user?.id || !supabaseClient) {
     throw new Error("Layanan avatar tidak tersedia");
   }
 
+  let avatarUrl = dataUrl || cachedAvatarDataUrl || null;
+  let storagePath = cachedAvatarStoragePath || null;
+
+  if (file) {
+    const uploadResult = await uploadAvatarFile(file);
+    avatarUrl = uploadResult.publicUrl;
+    storagePath = uploadResult.storagePath;
+
+    if (
+      cachedAvatarStoragePath &&
+      cachedAvatarStoragePath !== storagePath &&
+      avatarUrl
+    ) {
+      deleteAvatarFromStorage(cachedAvatarStoragePath);
+    }
+  }
+
   const payload = {
     user_id: cachedSession.user.id,
-    avatar_data_url: dataUrl || null,
+    avatar_data_url: avatarUrl,
+    avatar_storage_path: storagePath,
   };
 
   let stored = false;
@@ -1272,19 +1335,130 @@ async function saveAvatarToDatabase(dataUrl) {
   }
 
   const currentData = getCurrentProfileData();
+  currentData.avatarStoragePath = storagePath;
 
   if (!stored) {
-    await persistProfileMetadata(currentData, dataUrl || null);
+    await persistProfileMetadata(currentData, avatarUrl, storagePath);
   } else {
-    persistProfileMetadata(currentData, dataUrl || null).catch((error) => {
-      console.warn("Gagal memperbarui metadata avatar", error);
-    });
+    persistProfileMetadata(currentData, avatarUrl, storagePath).catch(
+      (error) => {
+        console.warn("Gagal memperbarui metadata avatar", error);
+      }
+    );
   }
 
-  cachedAvatarDataUrl = dataUrl || null;
+  cachedAvatarDataUrl = avatarUrl;
+  cachedAvatarStoragePath = storagePath;
+
   if (cachedProfileDetails) {
     cachedProfileDetails.avatarDataUrl = cachedAvatarDataUrl;
+    cachedProfileDetails.avatarStoragePath = cachedAvatarStoragePath;
   }
+}
+
+function getAvatarFileExtension(file) {
+  const namePart = file?.name?.split(".").pop()?.toLowerCase() ?? "";
+  if (namePart === "jpg" || namePart === "jpeg") {
+    return "jpg";
+  }
+  if (namePart === "png") {
+    return "png";
+  }
+  if (namePart === "webp") {
+    return "webp";
+  }
+
+  const mime = file?.type?.toLowerCase() ?? "";
+  if (mime.includes("webp")) {
+    return "webp";
+  }
+  if (mime.includes("png")) {
+    return "png";
+  }
+  return "jpg";
+}
+
+function getAvatarContentType(extension) {
+  if (extension === "png") {
+    return "image/png";
+  }
+  if (extension === "webp") {
+    return "image/webp";
+  }
+  return "image/jpeg";
+}
+
+function generateAvatarStoragePath(extension) {
+  const safeExtension = extension || "jpg";
+  const randomSuffix = Math.random().toString(36).slice(2, 10);
+  const userId = cachedSession?.user?.id;
+  if (!userId) {
+    throw new Error("ID pengguna tidak ditemukan untuk avatar");
+  }
+  return `${userId}/${Date.now()}-${randomSuffix}.${safeExtension}`;
+}
+
+function isAvatarBucketMissingError(error) {
+  if (!error) {
+    return false;
+  }
+  const message = (error.message ?? "").toLowerCase();
+  return (
+    error.statusCode === 404 ||
+    message.includes("bucket") ||
+    message.includes("not found")
+  );
+}
+
+async function uploadAvatarFile(file) {
+  if (!supabaseClient?.storage) {
+    throw new Error("Supabase storage tidak tersedia");
+  }
+
+  const extension = getAvatarFileExtension(file);
+  const contentType = file?.type && ALLOWED_AVATAR_MIME_TYPES.has(file.type)
+    ? file.type
+    : getAvatarContentType(extension);
+  const storagePath = generateAvatarStoragePath(extension);
+
+  const { error } = await supabaseClient.storage
+    .from(AVATAR_BUCKET)
+    .upload(storagePath, file, {
+      cacheControl: "3600",
+      upsert: true,
+      contentType,
+    });
+
+  if (error) {
+    if (isAvatarBucketMissingError(error)) {
+      const bucketError = new Error("AVATAR_BUCKET_MISSING");
+      bucketError.cause = error;
+      throw bucketError;
+    }
+    throw error;
+  }
+
+  const { data } = supabaseClient.storage
+    .from(AVATAR_BUCKET)
+    .getPublicUrl(storagePath);
+
+  return {
+    storagePath,
+    publicUrl: data?.publicUrl ?? null,
+  };
+}
+
+function deleteAvatarFromStorage(path) {
+  if (!path || !supabaseClient?.storage) {
+    return;
+  }
+
+  supabaseClient.storage
+    .from(AVATAR_BUCKET)
+    .remove([path])
+    .catch((error) => {
+      console.warn("Gagal menghapus avatar lama", error);
+    });
 }
 
 function hydrateProfileUI() {
@@ -1331,6 +1505,7 @@ function resetProfileForms() {
     profileEmailInput.value = "";
   }
   selectedAvatarDataUrl = null;
+  selectedAvatarFile = null;
 }
 
 function toggleProfileForms(enabled) {
@@ -1456,17 +1631,42 @@ function handleAvatarFileChange(event) {
   const file = event.target?.files?.[0];
   if (!file) {
     selectedAvatarDataUrl = null;
+    selectedAvatarFile = null;
     updateAvatarPreviewWithSelection();
     return;
   }
 
-  if (!file.type.startsWith("image/")) {
+  const mimeType = file.type?.toLowerCase() ?? "";
+  const fileName = file.name?.toLowerCase() ?? "";
+  const hasSupportedMime = ALLOWED_AVATAR_MIME_TYPES.has(mimeType);
+  const hasSupportedExtension =
+    fileName.endsWith(".png") ||
+    fileName.endsWith(".jpg") ||
+    fileName.endsWith(".jpeg") ||
+    fileName.endsWith(".webp");
+
+  if (!hasSupportedMime && !hasSupportedExtension) {
     setFeedbackMessage(
       avatarFeedbackEl,
-      "Format file tidak didukung. Gunakan PNG atau JPG.",
+      "Format file tidak didukung. Gunakan PNG, JPG, atau WEBP.",
       false
     );
     selectedAvatarDataUrl = null;
+    selectedAvatarFile = null;
+    event.target.value = "";
+    updateAvatarPreviewWithSelection();
+    return;
+  }
+
+  if (file.size > MAX_AVATAR_FILE_SIZE) {
+    setFeedbackMessage(
+      avatarFeedbackEl,
+      "Ukuran gambar maksimal 2 MB.",
+      false
+    );
+    selectedAvatarDataUrl = null;
+    selectedAvatarFile = null;
+    event.target.value = "";
     updateAvatarPreviewWithSelection();
     return;
   }
@@ -1474,11 +1674,13 @@ function handleAvatarFileChange(event) {
   const reader = new FileReader();
   reader.onload = () => {
     selectedAvatarDataUrl = reader.result;
+    selectedAvatarFile = file;
     updateAvatarPreviewWithSelection();
     setFeedbackMessage(avatarFeedbackEl, "Gambar siap disimpan.", true);
   };
   reader.onerror = () => {
     selectedAvatarDataUrl = null;
+    selectedAvatarFile = null;
     updateAvatarPreviewWithSelection();
     setFeedbackMessage(avatarFeedbackEl, "Gagal membaca file gambar.", false);
   };
@@ -1515,7 +1717,7 @@ async function handleAvatarSubmit(event) {
     return;
   }
 
-  if (!selectedAvatarDataUrl) {
+  if (!selectedAvatarDataUrl || !selectedAvatarFile) {
     setFeedbackMessage(avatarFeedbackEl, "Pilih gambar terlebih dahulu.", false);
     return;
   }
@@ -1523,19 +1725,26 @@ async function handleAvatarSubmit(event) {
   setFeedbackMessage(avatarFeedbackEl, "Menyimpan foto profil...", true);
 
   try {
-    await saveAvatarToDatabase(selectedAvatarDataUrl);
+    await saveAvatarToDatabase({
+      dataUrl: selectedAvatarDataUrl,
+      file: selectedAvatarFile,
+    });
     await loadProfileDetailsFromDatabase();
     selectedAvatarDataUrl = null;
+    selectedAvatarFile = null;
+    if (avatarInputEl) {
+      avatarInputEl.value = "";
+    }
     setFeedbackMessage(avatarFeedbackEl, "Foto profil berhasil disimpan.", true);
     updateAvatarPreview();
     renderNavbar();
   } catch (error) {
     console.error(error);
-    setFeedbackMessage(
-      avatarFeedbackEl,
-      "Gagal menyimpan foto profil. Coba lagi nanti.",
-      false
-    );
+    const errorMessage =
+      error?.message === "AVATAR_BUCKET_MISSING"
+        ? "Bucket penyimpanan avatar belum disiapkan. Ikuti panduan Supabase di README."
+        : "Gagal menyimpan foto profil. Coba lagi nanti.";
+    setFeedbackMessage(avatarFeedbackEl, errorMessage, false);
   }
 }
 

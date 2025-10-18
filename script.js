@@ -972,11 +972,9 @@ function renderNavbar() {
         <a href="profile.html">Profil Saya</a>
         <a href="courses.html">Kursus Saya</a>
         <a href="certificates.html">Sertifikat</a>
-        <a href="profile.html#pengaturan-akun">Pengaturan</a>
         <button type="button" class="dropdown-logout" id="logout-button">Logout</button>
       </div>
     </div>
-    <a class="btn" href="explore.html">Mulai Belajar</a>
   `;
 
   const avatarVisual = navAuthEl.querySelector(".avatar-visual");

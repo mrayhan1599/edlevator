@@ -328,10 +328,21 @@ function buildProfileDetails({ detailsData = {}, metadata = {} } = {}) {
       ""
   ).trim();
 
-  const avatarSource =
-    detailsData?.avatar_data_url ??
-    metadataValue(metadata, "avatar_data_url") ??
-    null;
+  const avatarCandidates = [
+    detailsData?.avatar_data_url,
+    metadataValue(metadata, "avatar_data_url"),
+    cachedProfile?.avatar_url,
+    cachedSession?.user?.avatar_url,
+    cachedSession?.user?.photoURL,
+    metadataValue(metadata, "avatar_url"),
+    metadataValue(metadata, "avatarUrl"),
+    metadataValue(metadata, "picture"),
+    metadataValue(metadata, "image_url"),
+  ];
+
+  const avatarSource = avatarCandidates.find(
+    (value) => typeof value === "string" && value.trim() !== ""
+  );
   const avatarStoragePathSource =
     detailsData?.avatar_storage_path ??
     metadataValue(metadata, "avatar_storage_path") ??
@@ -349,7 +360,7 @@ function buildProfileDetails({ detailsData = {}, metadata = {} } = {}) {
     bio: resolveField("bio"),
     avatarDataUrl:
       typeof avatarSource === "string" && avatarSource.trim() !== ""
-        ? avatarSource
+        ? avatarSource.trim()
         : null,
     avatarStoragePath:
       typeof avatarStoragePathSource === "string" &&
@@ -408,6 +419,64 @@ async function resolveAvatarUrl({
   }
 
   return null;
+}
+
+function deriveAvatarCacheToken() {
+  const sources = [
+    cachedAvatarStoragePath,
+    cachedProfileDetails?.avatarStoragePath,
+    cachedProfile?.updated_at,
+    cachedSession?.user?.updated_at,
+    cachedSession?.user?.last_sign_in_at,
+  ];
+
+  for (const source of sources) {
+    if (typeof source !== "string") {
+      continue;
+    }
+
+    const trimmed = source.trim();
+    if (!trimmed) {
+      continue;
+    }
+
+    const digits = trimmed.match(/\d{6,}/g);
+    if (digits && digits.length) {
+      return digits[digits.length - 1];
+    }
+
+    const parsed = Date.parse(trimmed);
+    if (!Number.isNaN(parsed)) {
+      return String(parsed);
+    }
+
+    const normalized = trimmed.replace(/[^0-9a-z]/gi, "");
+    if (normalized) {
+      return normalized.slice(-12);
+    }
+  }
+
+  return null;
+}
+
+function withAvatarCacheBusting(url) {
+  if (!url || typeof url !== "string" || isDataUrl(url)) {
+    return url;
+  }
+
+  try {
+    const trimmed = url.trim();
+    const parsed = new URL(trimmed, window.location.origin);
+    const token = deriveAvatarCacheToken();
+
+    if (token && !parsed.searchParams.has("v")) {
+      parsed.searchParams.set("v", token);
+    }
+
+    return parsed.toString();
+  } catch (error) {
+    return url;
+  }
 }
 
 async function seedProfileTablesFromMetadata(data = {}) {
@@ -822,14 +891,15 @@ function renderNavbar() {
   navAuthEl.innerHTML = `
     <div class="nav-profile">
       <button type="button" class="avatar-button" id="nav-avatar-button" aria-haspopup="true" aria-expanded="false">
-        <span class="avatar-visual" aria-hidden="true">${initials}</span>
+        <span class="avatar-visual" aria-hidden="true">
+          <span class="avatar-initials">${initials}</span>
+        </span>
         <span class="sr-only">Buka menu profil ${displayName}</span>
       </button>
       <div class="nav-dropdown" id="nav-profile-menu" hidden>
         <div class="nav-user-name">${displayName}</div>
         <a href="profile.html">Profil</a>
-        <a href="courses.html">Kursus Saya</a>
-        <a href="certificates.html">Sertifikat</a>
+        <a href="profile.html#pengaturan-akun">Pengaturan</a>
         <button type="button" class="dropdown-logout" id="logout-button">Logout</button>
       </div>
     </div>
@@ -837,33 +907,26 @@ function renderNavbar() {
 
   const avatarVisual = navAuthEl.querySelector(".avatar-visual");
   if (avatarVisual) {
-    const existingImage = avatarVisual.querySelector("img");
+    avatarVisual.innerHTML = "";
+
+    const initialsSpan = document.createElement("span");
+    initialsSpan.className = "avatar-initials";
+    initialsSpan.textContent = initials;
+    avatarVisual.appendChild(initialsSpan);
 
     if (cachedAvatarDataUrl) {
-      const backgroundValue = `url("${cachedAvatarDataUrl}")`;
-      if (avatarVisual.style.backgroundImage !== backgroundValue) {
-        avatarVisual.style.backgroundImage = backgroundValue;
-      }
-      if (existingImage) {
-        existingImage.src = cachedAvatarDataUrl;
-      } else {
-        avatarVisual.textContent = "";
-        const avatarImage = document.createElement("img");
-        avatarImage.src = cachedAvatarDataUrl;
-        avatarImage.alt = "";
-        avatarImage.loading = "lazy";
-        avatarImage.decoding = "async";
-        avatarVisual.appendChild(avatarImage);
-      }
+      const avatarImage = document.createElement("img");
+      avatarImage.src = withAvatarCacheBusting(cachedAvatarDataUrl);
+      avatarImage.alt = `Foto profil ${displayName}`;
+      avatarImage.loading = "lazy";
+      avatarImage.decoding = "async";
+      avatarImage.addEventListener("error", () => {
+        avatarImage.remove();
+        avatarVisual.classList.remove("has-image");
+      });
+      avatarVisual.appendChild(avatarImage);
       avatarVisual.classList.add("has-image");
     } else {
-      if (existingImage) {
-        existingImage.remove();
-      }
-      if (avatarVisual.style.backgroundImage) {
-        avatarVisual.style.backgroundImage = "";
-      }
-      avatarVisual.textContent = initials;
       avatarVisual.classList.remove("has-image");
     }
   }
@@ -1934,7 +1997,8 @@ function updateAvatarPreview() {
   );
 
   if (cachedAvatarDataUrl) {
-    avatarPreviewEl.style.backgroundImage = `url("${cachedAvatarDataUrl}")`;
+    const previewUrl = withAvatarCacheBusting(cachedAvatarDataUrl);
+    avatarPreviewEl.style.backgroundImage = `url("${previewUrl}")`;
     avatarPreviewEl.textContent = "";
     avatarPreviewEl.classList.add("has-image");
   } else {

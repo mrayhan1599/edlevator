@@ -188,7 +188,7 @@ img {
 }
 
 .btn,
-button:not(.nav-link-toggle) {
+button:not(.nav-link-toggle):not(.avatar-button) {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -219,14 +219,14 @@ button:not(.nav-link-toggle) {
 }
 
 .btn:not(.tertiary):hover,
-button:not(.nav-link-toggle):hover {
+button:not(.nav-link-toggle):not(.avatar-button):hover {
     background: var(--primary-dark);
     transform: translateY(-2px);
     box-shadow: 0 12px 24px rgba(14, 165, 233, 0.25);
 }
 
 .btn[disabled],
-button[disabled]:not(.nav-link-toggle),
+button[disabled]:not(.nav-link-toggle):not(.avatar-button),
 .btn.is-disabled {
     background: rgba(14, 165, 233, 0.35);
     box-shadow: none;
@@ -235,7 +235,7 @@ button[disabled]:not(.nav-link-toggle),
 }
 
 .btn:focus,
-button:not(.nav-link-toggle):focus {
+button:not(.nav-link-toggle):not(.avatar-button):focus {
     outline: 3px solid rgba(14, 165, 233, 0.3);
     outline-offset: 2px;
 }

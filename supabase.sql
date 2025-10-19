@@ -78,6 +78,7 @@ CREATE TABLE IF NOT EXISTS courses (
   id bigserial PRIMARY KEY,
   title text NOT NULL,
   category text,
+  track text,
   level text,
   hours int,
   rating numeric(2,1),
@@ -87,6 +88,9 @@ CREATE TABLE IF NOT EXISTS courses (
 
 ALTER TABLE courses
   ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true;
+
+ALTER TABLE courses
+  ADD COLUMN IF NOT EXISTS track text;
 
 CREATE TABLE IF NOT EXISTS enrollments (
   id bigserial PRIMARY KEY,
@@ -286,19 +290,98 @@ BEGIN
   END IF;
 END $$;
 
--- Data awal kursus hanya dimasukkan jika tabel masih kosong
-INSERT INTO courses (title, category, level, hours, rating, instructor)
-SELECT title, category, level, hours, rating, instructor
-FROM (
-  VALUES
-    ('Dasar Pemrograman Web', 'Teknik Informatika', 'Pemula', 24, 4.8, 'Dr. Sinta Wardhani'),
-    ('Manajemen Proyek Digital', 'Manajemen Bisnis', 'Menengah', 18, 4.6, 'Bima Adi, M.M.'),
-    ('Psikologi Komunikasi Massa', 'Psikologi', 'Lanjutan', 20, 4.9, 'Dr. Rani Kartika'),
-    ('Branding Visual untuk Startup', 'Desain Komunikasi Visual', 'Menengah', 16, 4.7, 'Aditia Permana, S.Ds.'),
-    ('Analisis Data Bisnis', 'Manajemen Bisnis', 'Lanjutan', 22, 4.5, 'Fadhil Ramadhan, M.BA'),
-    ('UI/UX Research Fundamentals', 'Desain Komunikasi Visual', 'Pemula', 14, 4.4, 'Natasya Lingga, M.Ds.')
-) AS seed(title, category, level, hours, rating, instructor)
-WHERE NOT EXISTS (SELECT 1 FROM courses);
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'courses'
+      AND policyname = 'admin insert courses'
+  ) THEN
+    ALTER POLICY "admin insert courses" ON courses
+      WITH CHECK (public.is_admin(auth.uid()));
+  ELSE
+    CREATE POLICY "admin insert courses" ON courses
+      FOR INSERT WITH CHECK (public.is_admin(auth.uid()));
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'courses'
+      AND policyname = 'admin delete courses'
+  ) THEN
+    ALTER POLICY "admin delete courses" ON courses
+      USING (public.is_admin(auth.uid()));
+  ELSE
+    CREATE POLICY "admin delete courses" ON courses
+      FOR DELETE USING (public.is_admin(auth.uid()));
+  END IF;
+END $$;
+
+-- Hapus data kursus contoh agar daftar "Kursus Saya" hanya berisi kursus terdaftar pengguna
+DELETE FROM courses
+WHERE title IN (
+  'Dasar Pemrograman Web',
+  'Manajemen Proyek Digital',
+  'Psikologi Komunikasi Massa',
+  'Branding Visual untuk Startup',
+  'Analisis Data Bisnis',
+  'UI/UX Research Fundamentals'
+);
+
+-- Seed data kursus lintas jalur IPA dan IPS dan perbarui metadata bila sudah ada
+WITH seed_data AS (
+  SELECT * FROM (
+    VALUES
+      ('Teknik Pertambangan', 'Teknik & Teknologi', 'IPA', 'Pemula', 24, 4.7, 'Tim Mentor Edlevator', true),
+      ('Pengantar Biologi Lingkungan', 'Sains', 'IPA', 'Pemula', 20, 4.8, 'Dr. Wina Sari', true),
+      ('Fisika Terapan untuk Energi', 'Sains', 'IPA', 'Menengah', 18, 4.6, 'Ir. Bima Prakoso', true),
+      ('Ekonomi Kreatif Digital', 'Bisnis & Ekonomi', 'IPS', 'Menengah', 16, 4.5, 'Mira Anggraini, M.Ec.', true),
+      ('Sosiologi Perkotaan Modern', 'Ilmu Sosial', 'IPS', 'Pemula', 14, 4.4, 'Dr. Satya Firmansyah', true),
+      ('Sejarah Indonesia Modern', 'Ilmu Sosial', 'IPS', 'Pemula', 12, 4.3, 'Prof. Dian Agustina', true)
+  ) AS seed(title, category, track, level, hours, rating, instructor, is_active)
+)
+UPDATE courses c
+SET
+  category = s.category,
+  track = s.track,
+  level = s.level,
+  hours = s.hours,
+  rating = s.rating,
+  instructor = s.instructor,
+  is_active = s.is_active
+FROM seed_data s
+WHERE c.title = s.title;
+
+WITH seed_data AS (
+  SELECT * FROM (
+    VALUES
+      ('Teknik Pertambangan', 'Teknik & Teknologi', 'IPA', 'Pemula', 24, 4.7, 'Tim Mentor Edlevator', true),
+      ('Pengantar Biologi Lingkungan', 'Sains', 'IPA', 'Pemula', 20, 4.8, 'Dr. Wina Sari', true),
+      ('Fisika Terapan untuk Energi', 'Sains', 'IPA', 'Menengah', 18, 4.6, 'Ir. Bima Prakoso', true),
+      ('Ekonomi Kreatif Digital', 'Bisnis & Ekonomi', 'IPS', 'Menengah', 16, 4.5, 'Mira Anggraini, M.Ec.', true),
+      ('Sosiologi Perkotaan Modern', 'Ilmu Sosial', 'IPS', 'Pemula', 14, 4.4, 'Dr. Satya Firmansyah', true),
+      ('Sejarah Indonesia Modern', 'Ilmu Sosial', 'IPS', 'Pemula', 12, 4.3, 'Prof. Dian Agustina', true)
+  ) AS seed(title, category, track, level, hours, rating, instructor, is_active)
+)
+INSERT INTO courses (title, category, track, level, hours, rating, instructor, is_active)
+SELECT
+  s.title,
+  s.category,
+  s.track,
+  s.level,
+  s.hours,
+  s.rating,
+  s.instructor,
+  s.is_active
+FROM seed_data s
+WHERE NOT EXISTS (
+  SELECT 1 FROM courses c WHERE c.title = s.title
+);
 
 -- Bucket penyimpanan avatar (dibuat hanya jika belum ada)
 DO $$

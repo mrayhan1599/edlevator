@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title>Ikon Hukum dan Ilmu Politik</title>
+  <defs>
+    <linearGradient id="lawGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a855f7" />
+      <stop offset="100%" stop-color="#7c3aed" />
+    </linearGradient>
+  </defs>
+  <rect x="6" y="6" width="52" height="52" rx="14" fill="url(#lawGradient)" opacity="0.9" />
+  <g fill="none" stroke="#ede9fe" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M20 24h24l-4 18H24z" />
+    <path d="M28 42v6h8v-6" />
+    <path d="M16 24h32" />
+  </g>
+  <circle cx="20" cy="20" r="3" fill="#ede9fe" />
+  <circle cx="44" cy="20" r="3" fill="#ede9fe" />
+</svg>

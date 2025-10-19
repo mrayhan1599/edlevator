@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title>Ikon Kedokteran dan Kesehatan</title>
+  <defs>
+    <linearGradient id="healthGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399" />
+      <stop offset="100%" stop-color="#10b981" />
+    </linearGradient>
+  </defs>
+  <rect x="6" y="6" width="52" height="52" rx="14" fill="url(#healthGradient)" opacity="0.9" />
+  <path d="M32 44c-6-6.4-14-11-14-20a8 8 0 0 1 14-5 8 8 0 0 1 14 5c0 9-8 13.6-14 20z" fill="#f8fafc" stroke="#f0fdfa" stroke-width="2" stroke-linejoin="round" />
+  <path d="M32 24v8m-4-4h8" stroke="#10b981" stroke-width="3" stroke-linecap="round" />
+</svg>

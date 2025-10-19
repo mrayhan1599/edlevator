@@ -8,12 +8,15 @@ const PROGRAM_TRACKS = {
       {
         title: "Teknik & Teknologi",
         detailsUrl: "teknik-pertambangan.html",
+        iconUrl: "assets/icons/engineering.svg",
       },
       {
         title: "Kedokteran & Kesehatan",
+        iconUrl: "assets/icons/health.svg",
       },
       {
         title: "Ilmu Hayati & Lingkungan",
+        iconUrl: "assets/icons/environment.svg",
       },
     ],
   },
@@ -25,12 +28,15 @@ const PROGRAM_TRACKS = {
     programs: [
       {
         title: "Manajemen & Bisnis",
+        iconUrl: "assets/icons/business.svg",
       },
       {
         title: "Komunikasi & Media",
+        iconUrl: "assets/icons/communication.svg",
       },
       {
         title: "Hukum & Ilmu Politik",
+        iconUrl: "assets/icons/law.svg",
       },
     ],
   },

@@ -58,6 +58,76 @@
                     </div>
                 </div>
 
+                <section class="admin-section" aria-labelledby="admin-course-heading">
+                    <div class="admin-section-header">
+                        <h2 id="admin-course-heading">Kelola Kursus</h2>
+                        <p class="admin-section-subtitle">Tambahkan kursus baru ke rumpun IPA atau IPS dan hapus kursus yang sudah tidak relevan.</p>
+                    </div>
+
+                    <form id="admin-course-form" class="admin-course-form" novalidate>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="course-title">Judul Kursus<span aria-hidden="true">*</span></label>
+                                <input type="text" id="course-title" name="title" required placeholder="Mis. Biologi Lingkungan" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="course-track">Rumpun<span aria-hidden="true">*</span></label>
+                                <select id="course-track" name="track" required>
+                                    <option value="">Pilih rumpun</option>
+                                    <option value="IPA">Jurusan IPA</option>
+                                    <option value="IPS">Jurusan IPS</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="course-category">Kategori</label>
+                                <input type="text" id="course-category" name="category" placeholder="Mis. Teknik &amp; Teknologi" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="course-level">Level</label>
+                                <input type="text" id="course-level" name="level" placeholder="Mis. Pemula" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="course-hours">Durasi (jam)</label>
+                                <input type="number" id="course-hours" name="hours" min="0" step="1" placeholder="Mis. 12">
+                            </div>
+                            <div class="form-group">
+                                <label for="course-rating">Rating</label>
+                                <input type="number" id="course-rating" name="rating" min="0" max="5" step="0.1" placeholder="Mis. 4.8">
+                            </div>
+                            <div class="form-group">
+                                <label for="course-instructor">Instruktur</label>
+                                <input type="text" id="course-instructor" name="instructor" placeholder="Mis. Tim Mentor Edlevator" autocomplete="off">
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn" id="admin-course-submit">Simpan Kursus</button>
+                            <p id="admin-course-feedback" class="form-feedback" role="status" aria-live="polite"></p>
+                        </div>
+                    </form>
+
+                    <div class="table-responsive">
+                        <table id="admin-course-list">
+                            <thead>
+                                <tr>
+                                    <th>Judul</th>
+                                    <th>Rumpun</th>
+                                    <th>Kategori</th>
+                                    <th>Level</th>
+                                    <th>Durasi</th>
+                                    <th>Rating</th>
+                                    <th>Instruktur</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="8" class="empty-state">Memuat daftar kursus...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
                 <section class="admin-section">
                     <h2>Data Pengguna</h2>
                     <div class="table-responsive">

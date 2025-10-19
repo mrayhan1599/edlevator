@@ -1060,6 +1060,66 @@ footer {
     margin-bottom: 1rem;
 }
 
+.admin-section-header {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.admin-section-subtitle {
+    margin: 0;
+    color: var(--text-light);
+    font-size: 0.95rem;
+}
+
+.admin-course-form {
+    background: var(--card);
+    padding: 1.5rem;
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+}
+
+.form-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+@media (min-width: 768px) {
+    .form-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .form-grid .form-group:nth-child(1),
+    .form-grid .form-group:nth-child(2) {
+        grid-column: span 1;
+    }
+
+    .form-grid .form-group:nth-child(1) {
+        grid-column: span 2;
+    }
+}
+
+.form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    margin-top: 0.5rem;
+}
+
+.form-feedback {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--text-light);
+}
+
+.form-feedback.is-success {
+    color: #16a34a;
+}
+
+.form-feedback.is-error {
+    color: #dc2626;
+}
+
 .table-responsive {
     overflow-x: auto;
     background: var(--card);
@@ -1349,6 +1409,37 @@ footer {
     line-clamp: 2;
     margin: 0;
     text-align: center;
+}
+
+.program-card__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    background: rgba(14, 165, 233, 0.12);
+    color: #0284c7;
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.program-card__meta {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    color: #475569;
+}
+
+.program-card__meta li {
+    display: flex;
+    justify-content: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
 }
 
 

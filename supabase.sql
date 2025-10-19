@@ -290,37 +290,13 @@ BEGIN
   END IF;
 END $$;
 
-DO $$
-BEGIN
-  IF EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public'
-      AND tablename = 'courses'
-      AND policyname = 'admin insert courses'
-  ) THEN
-    ALTER POLICY "admin insert courses" ON courses
-      WITH CHECK (public.is_admin(auth.uid()));
-  ELSE
-    CREATE POLICY "admin insert courses" ON courses
-      FOR INSERT WITH CHECK (public.is_admin(auth.uid()));
-  END IF;
-END $$;
+DROP POLICY IF EXISTS "admin insert courses" ON courses;
+CREATE POLICY "admin insert courses" ON courses
+  FOR INSERT WITH CHECK (public.is_admin(auth.uid()));
 
-DO $$
-BEGIN
-  IF EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public'
-      AND tablename = 'courses'
-      AND policyname = 'admin delete courses'
-  ) THEN
-    ALTER POLICY "admin delete courses" ON courses
-      USING (public.is_admin(auth.uid()));
-  ELSE
-    CREATE POLICY "admin delete courses" ON courses
-      FOR DELETE USING (public.is_admin(auth.uid()));
-  END IF;
-END $$;
+DROP POLICY IF EXISTS "admin delete courses" ON courses;
+CREATE POLICY "admin delete courses" ON courses
+  FOR DELETE USING (public.is_admin(auth.uid()));
 
 -- Hapus data kursus contoh agar daftar "Kursus Saya" hanya berisi kursus terdaftar pengguna
 DELETE FROM courses
@@ -334,8 +310,11 @@ WHERE title IN (
 );
 
 -- Seed data kursus lintas jalur IPA dan IPS dan perbarui metadata bila sudah ada
-WITH seed_data AS (
-  SELECT * FROM (
+DO $$
+DECLARE
+  seed RECORD;
+BEGIN
+  FOR seed IN SELECT * FROM (
     VALUES
       ('Teknik Pertambangan', 'Teknik & Teknologi', 'IPA', 'Pemula', 24, 4.7, 'Tim Mentor Edlevator', true),
       ('Pengantar Biologi Lingkungan', 'Sains', 'IPA', 'Pemula', 20, 4.8, 'Dr. Wina Sari', true),
@@ -344,44 +323,33 @@ WITH seed_data AS (
       ('Sosiologi Perkotaan Modern', 'Ilmu Sosial', 'IPS', 'Pemula', 14, 4.4, 'Dr. Satya Firmansyah', true),
       ('Sejarah Indonesia Modern', 'Ilmu Sosial', 'IPS', 'Pemula', 12, 4.3, 'Prof. Dian Agustina', true)
   ) AS seed(title, category, track, level, hours, rating, instructor, is_active)
-)
-UPDATE courses c
-SET
-  category = s.category,
-  track = s.track,
-  level = s.level,
-  hours = s.hours,
-  rating = s.rating,
-  instructor = s.instructor,
-  is_active = s.is_active
-FROM seed_data s
-WHERE c.title = s.title;
+  LOOP
+    UPDATE courses
+    SET
+      category = seed.category,
+      track = seed.track,
+      level = seed.level,
+      hours = seed.hours,
+      rating = seed.rating,
+      instructor = seed.instructor,
+      is_active = seed.is_active
+    WHERE title = seed.title;
 
-WITH seed_data AS (
-  SELECT * FROM (
-    VALUES
-      ('Teknik Pertambangan', 'Teknik & Teknologi', 'IPA', 'Pemula', 24, 4.7, 'Tim Mentor Edlevator', true),
-      ('Pengantar Biologi Lingkungan', 'Sains', 'IPA', 'Pemula', 20, 4.8, 'Dr. Wina Sari', true),
-      ('Fisika Terapan untuk Energi', 'Sains', 'IPA', 'Menengah', 18, 4.6, 'Ir. Bima Prakoso', true),
-      ('Ekonomi Kreatif Digital', 'Bisnis & Ekonomi', 'IPS', 'Menengah', 16, 4.5, 'Mira Anggraini, M.Ec.', true),
-      ('Sosiologi Perkotaan Modern', 'Ilmu Sosial', 'IPS', 'Pemula', 14, 4.4, 'Dr. Satya Firmansyah', true),
-      ('Sejarah Indonesia Modern', 'Ilmu Sosial', 'IPS', 'Pemula', 12, 4.3, 'Prof. Dian Agustina', true)
-  ) AS seed(title, category, track, level, hours, rating, instructor, is_active)
-)
-INSERT INTO courses (title, category, track, level, hours, rating, instructor, is_active)
-SELECT
-  s.title,
-  s.category,
-  s.track,
-  s.level,
-  s.hours,
-  s.rating,
-  s.instructor,
-  s.is_active
-FROM seed_data s
-WHERE NOT EXISTS (
-  SELECT 1 FROM courses c WHERE c.title = s.title
-);
+    IF NOT FOUND THEN
+      INSERT INTO courses (title, category, track, level, hours, rating, instructor, is_active)
+      VALUES (
+        seed.title,
+        seed.category,
+        seed.track,
+        seed.level,
+        seed.hours,
+        seed.rating,
+        seed.instructor,
+        seed.is_active
+      );
+    END IF;
+  END LOOP;
+END $$;
 
 -- Bucket penyimpanan avatar (dibuat hanya jika belum ada)
 DO $$

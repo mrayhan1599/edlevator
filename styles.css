@@ -1453,7 +1453,7 @@ footer {
 }
 
 #subcategory-programs {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
     gap: clamp(0.75rem, 3vw, 1.25rem);
 }
 
@@ -1468,7 +1468,7 @@ footer {
 }
 
 @media (max-width: 360px) {
-    #explore-programs {
+    #subcategory-programs {
         grid-template-columns: repeat(2, minmax(110px, 1fr));
     }
 }
@@ -1525,10 +1525,10 @@ footer {
     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
-#explore-programs .program-card {
+#subcategory-programs .program-card {
     display: grid;
     place-items: center;
-    padding: clamp(0.75rem, 2.5vw, 1.15rem);
+    padding: clamp(0.75rem, 2.75vw, 1.2rem);
     min-height: 0;
     aspect-ratio: 1 / 1;
     border-radius: 1rem;
@@ -1562,9 +1562,9 @@ button.program-card {
     text-align: center;
 }
 
-#explore-programs .program-card__content {
+#subcategory-programs .program-card__content {
     gap: 0.5rem;
-    max-width: 9rem;
+    max-width: 8.5rem;
     margin-inline: auto;
 }
 
@@ -1580,11 +1580,16 @@ button.program-card {
     line-height: 1;
 }
 
-#explore-programs .program-card__token,
-#explore-programs .program-card__icon {
-    width: 48px;
-    height: 48px;
+#subcategory-programs .program-card__token,
+#subcategory-programs .program-card__icon {
+    width: 44px;
+    height: 44px;
     border-radius: 14px;
+    font-size: 1.1rem;
+}
+
+#subcategory-programs .program-card__icon {
+    padding: 4px;
 }
 
 .program-card__icon {
@@ -1628,8 +1633,8 @@ button.program-card {
     text-align: center;
 }
 
-#explore-programs .program-card__title {
-    font-size: clamp(0.9rem, 2vw + 0.6rem, 1.05rem);
+#subcategory-programs .program-card__title {
+    font-size: clamp(0.85rem, 2vw + 0.6rem, 1rem);
 }
 
 .program-card__subtitle {

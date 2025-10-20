@@ -1449,12 +1449,12 @@ footer {
 
 #subcategory-programs {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1rem;
+    gap: clamp(0.75rem, 3vw, 1.25rem);
 }
 
-@media (max-width: 480px) {
+@media (max-width: 420px) {
     #subcategory-programs {
-        gap: 0.75rem;
+        grid-template-columns: repeat(2, minmax(120px, 1fr));
     }
 }
 

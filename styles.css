@@ -1441,54 +1441,30 @@ footer {
 
 .program-grid {
     display: grid;
-    gap: 1.25rem;
-    grid-template-columns: repeat(1, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(0.75rem, 2.5vw, 1.25rem);
     align-items: stretch;
     justify-items: stretch;
 }
 
-#subcategory-programs {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: clamp(0.75rem, 3vw, 1.25rem);
-}
-
-@media (max-width: 420px) {
-    #subcategory-programs {
+@media (max-width: 360px) {
+    .program-grid {
         grid-template-columns: repeat(2, minmax(120px, 1fr));
-    }
-}
-
-@media (min-width: 480px) {
-    .program-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-}
-
-@media (min-width: 768px) {
-    .program-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 1.5rem;
-    }
-}
-
-@media (min-width: 1024px) {
-    .program-grid {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 1.75rem;
+        justify-content: center;
     }
 }
 
 @media (min-width: 640px) {
-    #subcategory-programs {
+    .program-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 1.25rem;
+        gap: clamp(1rem, 2vw, 1.5rem);
     }
 }
 
 @media (min-width: 1024px) {
-    #subcategory-programs {
+    .program-grid {
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 1.5rem;
+        gap: clamp(1.25rem, 2vw, 1.75rem);
     }
 }
 
@@ -1496,8 +1472,9 @@ footer {
     display: flex;
     align-items: stretch;
     justify-content: center;
-    min-height: 7rem;
-    padding: 1.35rem 1.5rem;
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    padding: clamp(1rem, 1vw + 0.85rem, 1.5rem);
     border-radius: 1.25rem;
     border: 1px solid #e5e7eb;
     background: #fff;
@@ -1533,6 +1510,7 @@ button.program-card {
     justify-content: center;
     gap: 0.75rem;
     width: 100%;
+    flex: 1;
     text-align: center;
 }
 

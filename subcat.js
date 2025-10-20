@@ -12,36 +12,35 @@ function createSubProgramCard(subProgram) {
   const cardContent = document.createElement("div");
   cardContent.className = "program-card__content";
 
-  if (subProgram.emoji || subProgram.iconUrl) {
-    const token = document.createElement("span");
-    token.className = subProgram.emoji
-      ? "program-card__token"
-      : "program-card__icon";
+  const token = document.createElement("span");
 
-    if (subProgram.emoji) {
-      token.textContent = subProgram.emoji;
-      token.setAttribute("aria-hidden", "true");
-    } else if (subProgram.iconUrl) {
-      const iconImage = document.createElement("img");
-      iconImage.src = subProgram.iconUrl;
-      iconImage.alt = "";
-      iconImage.loading = "lazy";
-      iconImage.decoding = "async";
-      const handleIconError = () => {
-        if (iconImage.dataset.fallbackApplied === "true") {
-          iconImage.removeEventListener("error", handleIconError);
-          token.remove();
-          return;
-        }
+  if (subProgram.emoji) {
+    token.className = "program-card__token";
+    token.textContent = subProgram.emoji;
+    token.setAttribute("aria-hidden", "true");
+    cardContent.appendChild(token);
+  } else {
+    token.className = "program-card__icon";
 
-        iconImage.dataset.fallbackApplied = "true";
-        iconImage.src = FALLBACK_PROGRAM_ICON;
-      };
+    const iconImage = document.createElement("img");
+    iconImage.alt = "";
+    iconImage.loading = "lazy";
+    iconImage.decoding = "async";
 
-      iconImage.addEventListener("error", handleIconError);
-      token.appendChild(iconImage);
-    }
+    const handleIconError = () => {
+      if (iconImage.dataset.fallbackApplied === "true") {
+        iconImage.removeEventListener("error", handleIconError);
+        return;
+      }
 
+      iconImage.dataset.fallbackApplied = "true";
+      iconImage.src = FALLBACK_PROGRAM_ICON;
+    };
+
+    iconImage.addEventListener("error", handleIconError);
+    iconImage.src = subProgram.iconUrl || FALLBACK_PROGRAM_ICON;
+
+    token.appendChild(iconImage);
     cardContent.appendChild(token);
   }
 

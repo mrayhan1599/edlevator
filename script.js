@@ -1432,8 +1432,14 @@ function renderNavbar() {
 
   if (!cachedSession) {
     navAuthEl.innerHTML = `
-      <a class="btn secondary" href="login.html">Login</a>
-      <a class="btn" href="daftar.html">Daftar</a>
+      <a class="nav-icon-button secondary" href="login.html" aria-label="Masuk ke Edlevator">
+        <span class="nav-icon" aria-hidden="true">👤</span>
+        <span class="nav-icon-label">Login</span>
+      </a>
+      <a class="nav-icon-button primary" href="daftar.html" aria-label="Daftar akun Edlevator">
+        <span class="nav-icon" aria-hidden="true">✚</span>
+        <span class="nav-icon-label">Daftar</span>
+      </a>
     `;
     return;
   }

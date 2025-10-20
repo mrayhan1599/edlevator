@@ -1,5 +1,7 @@
 import { createProgramSlug, getProgram, getTrack } from "./explore-data.js";
 
+const FALLBACK_PROGRAM_ICON = "assets/icons/default-program.svg";
+
 function createSubProgramCard(subProgram) {
   const destination = subProgram.detailsUrl || "dashboard.html";
   const card = document.createElement("a");
@@ -25,6 +27,18 @@ function createSubProgramCard(subProgram) {
       iconImage.alt = "";
       iconImage.loading = "lazy";
       iconImage.decoding = "async";
+      const handleIconError = () => {
+        if (iconImage.dataset.fallbackApplied === "true") {
+          iconImage.removeEventListener("error", handleIconError);
+          token.remove();
+          return;
+        }
+
+        iconImage.dataset.fallbackApplied = "true";
+        iconImage.src = FALLBACK_PROGRAM_ICON;
+      };
+
+      iconImage.addEventListener("error", handleIconError);
       token.appendChild(iconImage);
     }
 

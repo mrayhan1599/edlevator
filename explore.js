@@ -1,5 +1,7 @@
 import { PROGRAM_TRACKS, createProgramSlug } from "./explore-data.js";
 
+const FALLBACK_PROGRAM_ICON = "assets/icons/default-program.svg";
+
 let baseSubtitle = "";
 let subtitleRef = null;
 
@@ -28,9 +30,18 @@ function createProgramCard(program, trackKey) {
     iconImage.alt = "";
     iconImage.loading = "lazy";
     iconImage.decoding = "async";
-    iconImage.addEventListener("error", () => {
-      iconWrapper.remove();
-    });
+    const handleIconError = () => {
+      if (iconImage.dataset.fallbackApplied === "true") {
+        iconImage.removeEventListener("error", handleIconError);
+        iconWrapper.remove();
+        return;
+      }
+
+      iconImage.dataset.fallbackApplied = "true";
+      iconImage.src = FALLBACK_PROGRAM_ICON;
+    };
+
+    iconImage.addEventListener("error", handleIconError);
 
     iconWrapper.appendChild(iconImage);
     cardContent.appendChild(iconWrapper);

@@ -1457,6 +1457,27 @@ footer {
     gap: clamp(0.9rem, 2.5vw, 1.4rem);
 }
 
+@media (max-width: 600px) {
+    #subcategory-programs {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: clamp(0.75rem, 4vw, 1.1rem);
+    }
+
+    #subcategory-programs .program-card {
+        padding: clamp(1rem, 4vw, 1.3rem);
+    }
+
+    #subcategory-programs .program-card__content {
+        align-items: center;
+        text-align: center;
+    }
+
+    #subcategory-programs .program-card__title,
+    #subcategory-programs .program-card__subtitle {
+        text-align: center;
+    }
+}
+
 @media (max-width: 420px) {
     #explore-programs {
         grid-template-columns: repeat(2, minmax(120px, 1fr));

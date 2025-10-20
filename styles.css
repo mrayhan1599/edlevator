@@ -1457,6 +1457,16 @@ button.program-card {
     height: 1.1rem;
 }
 
+.program-card[data-track="ipa"] {
+    background: #ffffff;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+
+.program-card[data-track="ipa"] .program-card__icon {
+    background: rgba(226, 232, 240, 0.6);
+    box-shadow: none;
+}
+
 
 
 .semester-list {

@@ -90,16 +90,15 @@ const PROGRAM_ILLUSTRATIONS = {
 const PROGRAM_TRACKS = {
   ipa: {
     label: "Jurusan IPA",
-    heroTitle: "Rumpun IPA",
-    description: "Jelajahi sains, teknologi, dan kesehatan dalam rumpun IPA.",
-    heading: "Sub-kategori unggulan rumpun IPA",
+    heroTitle: "Jurusan IPA",
+    description: "",
+    heading: "Sub-kategori unggulan jurusan IPA",
     sectionDescription:
       "Pilih rumpun favoritmu lalu jelajahi daftar jurusan detail.",
     programs: [
       {
         title: "Teknik & Teknologi",
         iconUrl: "assets/icons/engineering.svg",
-        tagline: "Bidang rekayasa dan inovasi teknologi modern.",
         description:
           "Kenali jurusan teknik terpopuler yang siap membangun infrastruktur, energi, hingga transformasi digital.",
         heading: "Jurusan populer di Teknik & Teknologi",
@@ -159,7 +158,6 @@ const PROGRAM_TRACKS = {
       {
         title: "Kedokteran & Kesehatan",
         iconUrl: "assets/icons/health.svg",
-        tagline: "Profesi kesehatan yang menjaga kualitas hidup masyarakat.",
         description:
           "Temukan jurusan kesehatan dari kedokteran hingga teknologi laboratorium medis dengan fokus pelayanan holistik.",
         heading: "Pilihan jurusan Kedokteran & Kesehatan",
@@ -218,7 +216,6 @@ const PROGRAM_TRACKS = {
       {
         title: "Ilmu Hayati & Lingkungan",
         iconUrl: "assets/icons/environment.svg",
-        tagline: "Belajar ekosistem, pangan, hingga keberlanjutan bumi.",
         description:
           "Eksplor jurusan biologi, pertanian, dan kelautan yang menjaga keseimbangan alam serta sumber daya hayati.",
         heading: "Jurusan favorit Ilmu Hayati & Lingkungan",
@@ -493,6 +490,7 @@ function createProgramCard(program, trackKey) {
   const destination = program.detailsUrl || "dashboard.html";
   const card = document.createElement(hasSubPrograms ? "button" : "a");
   card.className = "program-card";
+  card.dataset.track = trackKey;
 
   if (hasSubPrograms) {
     card.type = "button";
@@ -530,14 +528,14 @@ function createProgramCard(program, trackKey) {
   titleEl.textContent = program.title;
   cardContent.appendChild(titleEl);
 
-  if (program.tagline) {
+  if (program.tagline && trackKey !== "ipa") {
     const subtitleEl = document.createElement("p");
     subtitleEl.className = "program-card__subtitle";
     subtitleEl.textContent = program.tagline;
     cardContent.appendChild(subtitleEl);
   }
 
-  if (hasSubPrograms) {
+  if (hasSubPrograms && trackKey !== "ipa") {
     const ctaEl = document.createElement("span");
     ctaEl.className = "program-card__cta";
     ctaEl.innerHTML = `Lihat pilihan

@@ -1441,7 +1441,7 @@ footer {
 
 .program-grid {
     display: grid;
-    gap: 1.25rem;
+    gap: clamp(0.85rem, 2vw, 1.35rem);
     grid-template-columns: repeat(1, minmax(0, 1fr));
     align-items: stretch;
     justify-items: stretch;
@@ -1453,67 +1453,47 @@ footer {
 }
 
 #subcategory-programs {
-    grid-template-columns: repeat(2, minmax(140px, 1fr));
-    gap: clamp(0.75rem, 3vw, 1.25rem);
+    grid-template-columns: repeat(1, minmax(0, 1fr));
 }
 
 @media (max-width: 420px) {
     #explore-programs {
         grid-template-columns: repeat(2, minmax(120px, 1fr));
     }
-
-    #subcategory-programs {
-        grid-template-columns: repeat(2, minmax(120px, 1fr));
-    }
-}
-
-@media (max-width: 360px) {
-    #subcategory-programs {
-        grid-template-columns: repeat(2, minmax(110px, 1fr));
-    }
-}
-
-@media (min-width: 480px) {
-    .program-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-}
-
-@media (min-width: 768px) {
-    .program-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 1.5rem;
-    }
-}
-
-@media (min-width: 1024px) {
-    .program-grid {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 1.75rem;
-    }
 }
 
 @media (min-width: 640px) {
-    #explore-programs,
-    #subcategory-programs {
+    #explore-programs {
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 1.25rem;
+    }
+
+    #subcategory-programs {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: clamp(1rem, 2.5vw, 1.5rem);
     }
 }
 
 @media (min-width: 1024px) {
-    #explore-programs,
+    #explore-programs {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: clamp(1rem, 2.5vw, 1.5rem);
+    }
+
+    #subcategory-programs {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1280px) {
     #subcategory-programs {
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 1.5rem;
     }
 }
 
 .program-card {
     display: flex;
     align-items: stretch;
-    justify-content: center;
-    min-height: 7rem;
+    justify-content: flex-start;
     padding: 1.35rem 1.5rem;
     border-radius: 1.25rem;
     border: 1px solid #e5e7eb;
@@ -1521,17 +1501,17 @@ footer {
     box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
     text-decoration: none;
     color: inherit;
-    text-align: center;
+    text-align: left;
     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
-#subcategory-programs .program-card {
+#explore-programs .program-card {
     display: grid;
     place-items: center;
     padding: clamp(0.75rem, 2.75vw, 1.2rem);
-    min-height: 0;
-    aspect-ratio: 1 / 1;
     border-radius: 1rem;
+    aspect-ratio: 1 / 1;
+    text-align: center;
 }
 
 button.program-card {
@@ -1555,17 +1535,20 @@ button.program-card {
 .program-card__content {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 0.85rem;
     width: 100%;
-    text-align: center;
+    text-align: left;
 }
 
-#subcategory-programs .program-card__content {
-    gap: 0.5rem;
+#explore-programs .program-card__content {
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
     max-width: 8.5rem;
     margin-inline: auto;
+    text-align: center;
 }
 
 .program-card__token {
@@ -1580,15 +1563,15 @@ button.program-card {
     line-height: 1;
 }
 
-#subcategory-programs .program-card__token,
-#subcategory-programs .program-card__icon {
+#explore-programs .program-card__token,
+#explore-programs .program-card__icon {
     width: 44px;
     height: 44px;
     border-radius: 14px;
     font-size: 1.1rem;
 }
 
-#subcategory-programs .program-card__icon {
+#explore-programs .program-card__icon {
     padding: 4px;
 }
 
@@ -1605,10 +1588,6 @@ button.program-card {
     overflow: hidden;
 }
 
-#explore-programs .program-card__icon {
-    padding: 4px;
-}
-
 .program-card__icon img {
     width: 100%;
     height: 100%;
@@ -1620,21 +1599,16 @@ button.program-card {
     font-size: clamp(0.95rem, 1vw + 0.8rem, 1.15rem);
     font-weight: 600;
     color: #0f172a;
-    line-height: 1.35;
+    line-height: 1.4;
     max-width: 100%;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
     word-break: break-word;
-    line-clamp: 2;
     margin: 0;
-    text-align: center;
+    text-align: left;
 }
 
-#subcategory-programs .program-card__title {
+#explore-programs .program-card__title {
     font-size: clamp(0.85rem, 2vw + 0.6rem, 1rem);
+    text-align: center;
 }
 
 .program-card__subtitle {
@@ -1642,6 +1616,11 @@ button.program-card {
     color: #475569;
     line-height: 1.45;
     margin: 0;
+    text-align: left;
+}
+
+#explore-programs .program-card__subtitle {
+    text-align: center;
 }
 
 .program-card__cta {

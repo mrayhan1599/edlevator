@@ -1,37 +1,4 @@
-import {
-  PROGRAM_ILLUSTRATIONS,
-  createProgramSlug,
-  getProgram,
-  getTrack,
-} from "./explore-data.js";
-
-function renderIllustration(figureEl, program) {
-  if (!figureEl) {
-    return;
-  }
-
-  const illustrationKey = program?.illustration?.key;
-  const illustrationTemplate = illustrationKey
-    ? PROGRAM_ILLUSTRATIONS[illustrationKey]
-    : null;
-
-  if (!illustrationTemplate) {
-    figureEl.hidden = true;
-    figureEl.setAttribute("aria-hidden", "true");
-    figureEl.innerHTML = "";
-    return;
-  }
-
-  const caption = program.illustration?.caption ?? "";
-  figureEl.hidden = false;
-  figureEl.setAttribute("aria-hidden", "false");
-  figureEl.innerHTML = `
-    <div class="explore-sub-illustration__canvas">
-      ${illustrationTemplate}
-    </div>
-    ${caption ? `<figcaption>${caption}</figcaption>` : ""}
-  `;
-}
+import { createProgramSlug, getProgram, getTrack } from "./explore-data.js";
 
 function createSubProgramCard(subProgram) {
   const destination = subProgram.detailsUrl || "dashboard.html";
@@ -128,7 +95,6 @@ function initializeSubcategoryPage() {
   const badgeEl = document.getElementById("subcategory-badge");
   const headingEl = document.getElementById("subcategory-programs-heading");
   const programsContainer = document.getElementById("subcategory-programs");
-  const illustrationEl = document.getElementById("subcategory-illustration");
 
   const trackUrlParams = new URLSearchParams({ track: trackKey });
   const trackUrl = `explore.html?${trackUrlParams.toString()}`;
@@ -168,8 +134,6 @@ function initializeSubcategoryPage() {
   if (headingEl) {
     headingEl.textContent = program.heading ?? `Pilihan jurusan ${program.title}`;
   }
-
-  renderIllustration(illustrationEl, program);
 
   if (!programsContainer) {
     return;

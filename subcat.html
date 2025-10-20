@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sub-kategori Jurusan - Edlevator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="logo" aria-label="Beranda Edlevator">
+                <span>E</span>
+                Edlevator
+            </a>
+            <ul class="nav-links" id="primary-navigation">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="explore.html" aria-current="page">Explore</a></li>
+                <li><a href="admin.html">Admin</a></li>
+            </ul>
+            <div class="nav-end">
+                <button type="button" class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="primary-navigation">
+                    <span class="sr-only">Buka navigasi utama</span>
+                    <span class="nav-toggle-icon" aria-hidden="true"></span>
+                </button>
+                <div class="nav-actions" id="nav-auth"></div>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <section class="subcat-hero" aria-labelledby="subcategory-title">
+            <div class="container subcat-hero__content">
+                <nav class="breadcrumb" aria-label="Breadcrumb">
+                    <ol>
+                        <li><a href="explore.html">Explore</a></li>
+                        <li><a id="breadcrumb-track" href="explore.html?track=ipa">Jurusan IPA</a></li>
+                        <li aria-current="page" id="breadcrumb-subcategory">Sub-kategori</li>
+                    </ol>
+                </nav>
+                <div class="subcat-hero__header">
+                    <h1 id="subcategory-title">Sub-kategori Jurusan</h1>
+                    <p id="subcategory-description"></p>
+                </div>
+                <div class="subcat-hero__actions">
+                    <a href="explore.html" class="btn secondary" id="subcategory-back">Kembali ke Jurusan IPA</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="subcat-section" aria-labelledby="subcategory-programs-heading">
+            <div class="container subcat-section__layout">
+                <figure class="subcat-illustration" id="subcategory-illustration" hidden aria-hidden="true"></figure>
+                <div class="subcat-section__content">
+                    <header class="subcat-section__header">
+                        <p class="badge" id="subcategory-badge">Jurusan IPA</p>
+                        <h2 id="subcategory-programs-heading">Jurusan populer</h2>
+                    </header>
+                    <div class="program-grid" id="subcategory-programs" aria-live="polite"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        &copy; 2024 Edlevator. Semua hak dilindungi.
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" src="script.js"></script>
+    <script type="module" src="subcat.js"></script>
+</body>
+</html>

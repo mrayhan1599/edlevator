@@ -1447,14 +1447,29 @@ footer {
     justify-items: stretch;
 }
 
+#explore-programs {
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+    gap: clamp(0.75rem, 3vw, 1.25rem);
+}
+
 #subcategory-programs {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: clamp(0.75rem, 3vw, 1.25rem);
 }
 
 @media (max-width: 420px) {
+    #explore-programs {
+        grid-template-columns: repeat(2, minmax(120px, 1fr));
+    }
+
     #subcategory-programs {
         grid-template-columns: repeat(2, minmax(120px, 1fr));
+    }
+}
+
+@media (max-width: 360px) {
+    #explore-programs {
+        grid-template-columns: repeat(2, minmax(110px, 1fr));
     }
 }
 
@@ -1479,6 +1494,7 @@ footer {
 }
 
 @media (min-width: 640px) {
+    #explore-programs,
     #subcategory-programs {
         grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 1.25rem;
@@ -1486,6 +1502,7 @@ footer {
 }
 
 @media (min-width: 1024px) {
+    #explore-programs,
     #subcategory-programs {
         grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 1.5rem;
@@ -1506,6 +1523,15 @@ footer {
     color: inherit;
     text-align: center;
     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+#explore-programs .program-card {
+    display: grid;
+    place-items: center;
+    padding: clamp(0.75rem, 2.5vw, 1.15rem);
+    min-height: 0;
+    aspect-ratio: 1 / 1;
+    border-radius: 1rem;
 }
 
 button.program-card {
@@ -1536,6 +1562,12 @@ button.program-card {
     text-align: center;
 }
 
+#explore-programs .program-card__content {
+    gap: 0.5rem;
+    max-width: 9rem;
+    margin-inline: auto;
+}
+
 .program-card__token {
     display: inline-flex;
     align-items: center;
@@ -1546,6 +1578,13 @@ button.program-card {
     background: linear-gradient(135deg, rgba(125, 211, 252, 0.35), rgba(14, 165, 233, 0.25));
     font-size: 1.35rem;
     line-height: 1;
+}
+
+#explore-programs .program-card__token,
+#explore-programs .program-card__icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
 }
 
 .program-card__icon {
@@ -1559,6 +1598,10 @@ button.program-card {
     box-shadow: inset 0 2px 4px rgba(15, 23, 42, 0.12);
     padding: 6px;
     overflow: hidden;
+}
+
+#explore-programs .program-card__icon {
+    padding: 4px;
 }
 
 .program-card__icon img {
@@ -1583,6 +1626,10 @@ button.program-card {
     line-clamp: 2;
     margin: 0;
     text-align: center;
+}
+
+#explore-programs .program-card__title {
+    font-size: clamp(0.9rem, 2vw + 0.6rem, 1.05rem);
 }
 
 .program-card__subtitle {

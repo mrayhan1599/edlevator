@@ -2194,3 +2194,101 @@ button.program-card {
         justify-content: center;
     }
 }
+
+@media (max-width: 540px) {
+    .navbar .container {
+        padding: 0.65rem 1rem;
+        gap: 0.5rem;
+    }
+
+    .logo {
+        font-size: 1.1rem;
+        gap: 0.35rem;
+    }
+
+    .logo span {
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        font-size: 0.95rem;
+    }
+
+    .nav-end {
+        width: 100%;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+
+    .nav-actions {
+        flex: 1;
+        justify-content: flex-end;
+    }
+
+    .hero {
+        padding: 90px 1.25rem 80px;
+    }
+
+    .hero h1 {
+        font-size: clamp(1.9rem, 7vw, 2.4rem);
+    }
+
+    .hero p {
+        font-size: 1rem;
+        margin-bottom: 1.75rem;
+    }
+
+    .section {
+        padding: 3.5rem 1.25rem;
+    }
+
+    .section-title {
+        font-size: 1.6rem;
+        margin-bottom: 2.25rem;
+    }
+
+    .card {
+        padding: 2rem 1.5rem;
+    }
+}
+
+@media (max-width: 420px) {
+    .navbar .container {
+        padding: 0.6rem 0.85rem;
+    }
+
+    .nav-end {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .nav-actions {
+        width: 100%;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+
+    .nav-actions .nav-icon-button {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .hero {
+        padding: 80px 1rem 70px;
+    }
+
+    .hero p {
+        font-size: 0.98rem;
+    }
+
+    .section {
+        padding: 3rem 1rem;
+    }
+
+    .features {
+        gap: 1.25rem;
+    }
+
+    .card {
+        padding: 1.75rem 1.4rem;
+    }
+}

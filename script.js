@@ -336,6 +336,12 @@ let adminEnrollmentsBody = null;
 let adminCourseFilter = null;
 let adminStatusFilter = null;
 let adminEmptyState = null;
+let adminLayoutEl = null;
+let adminSidebarEl = null;
+let adminSidebarToggleButton = null;
+let adminSidebarCloseButton = null;
+let adminSidebarBackdrop = null;
+let adminSidebarCleanup = null;
 let adminCoursesCache = [];
 let adminEnrollmentsCache = [];
 let adminProfilesCache = [];
@@ -1411,6 +1417,165 @@ function setupMobileNavToggle() {
 
   closeMobileNavMenu = closeMenu;
   closeMenu();
+}
+
+function cleanupAdminSidebarToggle() {
+  if (typeof adminSidebarCleanup === "function") {
+    adminSidebarCleanup();
+    adminSidebarCleanup = null;
+  }
+}
+
+function setupAdminSidebarToggle() {
+  cleanupAdminSidebarToggle();
+
+  if (!adminLayoutEl || !adminSidebarEl || !adminSidebarToggleButton) {
+    return;
+  }
+
+  const closeButton = adminSidebarCloseButton;
+  const backdrop = adminSidebarBackdrop;
+  const focusSelectors =
+    "[data-sidebar-focus], a, button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex='-1'])";
+  const mediaQuery = window.matchMedia("(max-width: 960px)");
+  let previousBodyOverflow = document.body.style.overflow;
+
+  const syncState = () => {
+    const isMobile = mediaQuery.matches;
+    const isOpen = adminLayoutEl.dataset.sidebarOpen === "true";
+
+    if (!isMobile) {
+      adminSidebarEl.removeAttribute("aria-hidden");
+      adminSidebarToggleButton.setAttribute("aria-expanded", "false");
+      if (backdrop) {
+        backdrop.hidden = true;
+      }
+      document.body.style.overflow = previousBodyOverflow;
+      return;
+    }
+
+    adminSidebarEl.setAttribute("aria-hidden", isOpen ? "false" : "true");
+    adminSidebarToggleButton.setAttribute("aria-expanded", isOpen ? "true" : "false");
+
+    if (backdrop) {
+      backdrop.hidden = !isOpen;
+    }
+
+    if (isOpen) {
+      previousBodyOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = previousBodyOverflow;
+    }
+  };
+
+  const focusFirstItem = () => {
+    const focusTarget = adminSidebarEl.querySelector(focusSelectors);
+    if (focusTarget) {
+      focusTarget.focus({ preventScroll: true });
+      return;
+    }
+
+    adminSidebarEl.focus({ preventScroll: true });
+  };
+
+  const closeSidebar = ({ returnFocus = false } = {}) => {
+    adminLayoutEl.dataset.sidebarOpen = "false";
+    syncState();
+    if (returnFocus && mediaQuery.matches) {
+      adminSidebarToggleButton.focus();
+    }
+  };
+
+  const openSidebar = () => {
+    adminLayoutEl.dataset.sidebarOpen = "true";
+    syncState();
+    if (mediaQuery.matches) {
+      window.setTimeout(focusFirstItem, 100);
+    }
+  };
+
+  const handleToggle = () => {
+    const isOpen = adminLayoutEl.dataset.sidebarOpen === "true";
+    if (isOpen) {
+      closeSidebar({ returnFocus: true });
+    } else {
+      openSidebar();
+    }
+  };
+
+  const handleKeydown = (event) => {
+    if (event.key === "Escape") {
+      closeSidebar({ returnFocus: true });
+    }
+  };
+
+  const handleBackdrop = () => {
+    closeSidebar({ returnFocus: true });
+  };
+
+  const handleLinkClick = () => {
+    closeSidebar();
+  };
+
+  const handleCloseButton = () => {
+    closeSidebar({ returnFocus: true });
+  };
+
+  const handleMediaChange = () => {
+    if (!mediaQuery.matches) {
+      adminLayoutEl.dataset.sidebarOpen = "false";
+    }
+    syncState();
+  };
+
+  adminSidebarToggleButton.addEventListener("click", handleToggle);
+  window.addEventListener("keydown", handleKeydown);
+
+  let removeMediaListener = () => {};
+  if (typeof mediaQuery.addEventListener === "function") {
+    mediaQuery.addEventListener("change", handleMediaChange);
+    removeMediaListener = () => mediaQuery.removeEventListener("change", handleMediaChange);
+  } else {
+    mediaQuery.addListener(handleMediaChange);
+    removeMediaListener = () => mediaQuery.removeListener(handleMediaChange);
+  }
+
+  if (closeButton) {
+    closeButton.addEventListener("click", handleCloseButton);
+  }
+
+  if (backdrop) {
+    backdrop.addEventListener("click", handleBackdrop);
+  }
+
+  const sidebarLinks = Array.from(adminSidebarEl.querySelectorAll("a"));
+  sidebarLinks.forEach((link) => {
+    link.addEventListener("click", handleLinkClick);
+  });
+
+  adminSidebarCleanup = () => {
+    adminSidebarToggleButton.removeEventListener("click", handleToggle);
+    window.removeEventListener("keydown", handleKeydown);
+    removeMediaListener();
+
+    if (closeButton) {
+      closeButton.removeEventListener("click", handleCloseButton);
+    }
+
+    if (backdrop) {
+      backdrop.removeEventListener("click", handleBackdrop);
+      backdrop.hidden = true;
+    }
+
+    sidebarLinks.forEach((link) => {
+      link.removeEventListener("click", handleLinkClick);
+    });
+
+    document.body.style.overflow = previousBodyOverflow;
+  };
+
+  handleMediaChange();
 }
 
 function renderNavbar() {
@@ -3032,12 +3197,20 @@ function renderAdminUsers(profiles = adminProfilesCache) {
 
   profiles.forEach((profile) => {
     const row = document.createElement("tr");
-    row.innerHTML = `
-      <td>${profile.full_name ?? "-"}</td>
-      <td>${profile.id}</td>
-      <td>${profile.role ?? "user"}</td>
-      <td>${formatDate(profile.created_at)}</td>
-    `;
+    const columns = [
+      { label: "Nama", value: profile.full_name ?? "-" },
+      { label: "User ID", value: profile.id },
+      { label: "Role", value: profile.role ?? "user" },
+      { label: "Dibuat", value: formatDate(profile.created_at) },
+    ];
+
+    columns.forEach(({ label, value }) => {
+      const cell = document.createElement("td");
+      cell.dataset.label = label;
+      cell.textContent = value;
+      row.appendChild(cell);
+    });
+
     adminUsersBody.appendChild(row);
   });
 }
@@ -3090,20 +3263,33 @@ function renderAdminEnrollments() {
     const courseTitle = courseMap.get(String(enrollment.course_id)) ?? enrollment.course_id;
 
     const actionButton = document.createElement("button");
+    const isPaid = enrollment.status === "paid";
     actionButton.type = "button";
-    actionButton.className = "btn secondary small";
-    actionButton.textContent = enrollment.status === "paid" ? "Sudah Lunas" : "Tandai Lunas";
-    actionButton.disabled = enrollment.status === "paid";
+    actionButton.className = "btn secondary small admin-action-button";
+    actionButton.textContent = isPaid ? "Lunas" : "Tandai Lunas";
+    actionButton.setAttribute(
+      "aria-label",
+      isPaid ? "Status pendaftaran sudah lunas" : "Tandai pendaftaran sebagai lunas"
+    );
+    actionButton.disabled = isPaid;
     actionButton.addEventListener("click", () => updateEnrollmentStatus(enrollment.id));
 
-    row.innerHTML = `
-      <td>${userName}</td>
-      <td>${courseTitle}</td>
-      <td>${enrollment.status}</td>
-      <td>${formatDate(enrollment.created_at)}</td>
-    `;
+    const cells = [
+      { label: "Nama Pengguna", value: userName },
+      { label: "Kursus", value: courseTitle },
+      { label: "Status", value: enrollment.status },
+      { label: "Daftar Pada", value: formatDate(enrollment.created_at) },
+    ];
+
+    cells.forEach(({ label, value }) => {
+      const cell = document.createElement("td");
+      cell.dataset.label = label;
+      cell.textContent = value;
+      row.appendChild(cell);
+    });
 
     const actionCell = document.createElement("td");
+    actionCell.dataset.label = "Aksi";
     actionCell.appendChild(actionButton);
     row.appendChild(actionCell);
     adminEnrollmentsBody.appendChild(row);
@@ -3146,6 +3332,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   navToggleButton = document.getElementById("nav-toggle");
   navLinksList = document.getElementById("primary-navigation");
   navContainerEl = document.querySelector(".navbar");
+  adminLayoutEl = document.getElementById("admin-layout");
+  adminSidebarEl = document.getElementById("admin-sidebar");
+  adminSidebarToggleButton = document.getElementById("admin-sidebar-toggle");
+  adminSidebarCloseButton = document.getElementById("admin-sidebar-close");
+  adminSidebarBackdrop = document.getElementById("admin-sidebar-backdrop");
   enrollmentsContainer = document.getElementById("my-enrollments");
   teknikEnrollButton = document.getElementById("teknik-enroll-button");
   dashboardMessage = document.getElementById("dashboard-message");
@@ -3180,6 +3371,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   setupMainNavDropdowns();
   setupMobileNavToggle();
+  setupAdminSidebarToggle();
   initializeEventListeners();
   initializeProfileForms();
   initializeTeknikPertambanganCTA();

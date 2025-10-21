@@ -35,73 +35,101 @@
                 <p>Kelola pengguna dan pantau transaksi pendaftaran kursus.</p>
             </header>
 
-            <div id="admin-message" class="admin-message">
-                <p>Memeriksa hak akses...</p>
-            </div>
+            <div class="admin-layout" id="admin-layout" data-sidebar-open="false">
+                <button type="button" class="admin-sidebar-toggle" id="admin-sidebar-toggle" aria-expanded="false" aria-controls="admin-sidebar">
+                    <span class="admin-sidebar-toggle-icon" aria-hidden="true"></span>
+                    Menu Admin
+                </button>
 
-            <section id="admin-panel" class="admin-panel" hidden>
-                <div class="admin-filters">
-                    <div class="form-group">
-                        <label for="admin-filter-course">Filter Kursus</label>
-                        <select id="admin-filter-course">
-                            <option value="">Semua Kursus</option>
-                        </select>
+                <aside class="admin-sidebar" id="admin-sidebar" aria-label="Navigasi panel admin" tabindex="-1">
+                    <div class="admin-sidebar__header">
+                        <h2>Menu Admin</h2>
+                        <button type="button" class="admin-sidebar-close" id="admin-sidebar-close">
+                            <span class="sr-only">Tutup menu navigasi</span>
+                            <span aria-hidden="true">&times;</span>
+                        </button>
                     </div>
-                    <div class="form-group">
-                        <label for="admin-filter-status">Filter Status</label>
-                        <select id="admin-filter-status">
-                            <option value="">Semua Status</option>
-                            <option value="pending">Pending</option>
-                            <option value="paid">Paid</option>
-                            <option value="cancelled">Cancelled</option>
-                        </select>
+                    <nav class="admin-sidebar__nav">
+                        <ul>
+                            <li><a href="#admin-users-heading" data-sidebar-focus>Data Pengguna</a></li>
+                            <li><a href="#admin-enrollments-heading">Pendaftaran Kursus</a></li>
+                        </ul>
+                    </nav>
+                    <p class="admin-sidebar__helper">Gunakan menu ini untuk meloncat langsung ke tabel data yang ingin kamu kelola.</p>
+                </aside>
+
+                <div class="admin-sidebar-backdrop" id="admin-sidebar-backdrop" hidden></div>
+
+                <div class="admin-main">
+                    <div id="admin-message" class="admin-message">
+                        <p>Memeriksa hak akses...</p>
                     </div>
+
+                    <section id="admin-panel" class="admin-panel" hidden>
+                        <div class="admin-filters">
+                            <div class="form-group">
+                                <label for="admin-filter-course">Filter Kursus</label>
+                                <select id="admin-filter-course">
+                                    <option value="">Semua Kursus</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="admin-filter-status">Filter Status</label>
+                                <select id="admin-filter-status">
+                                    <option value="">Semua Status</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="paid">Paid</option>
+                                    <option value="cancelled">Cancelled</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <section class="admin-section" aria-labelledby="admin-users-heading" id="admin-users-section">
+                            <h2 id="admin-users-heading">Data Pengguna</h2>
+                            <div class="table-responsive">
+                                <table id="admin-users">
+                                    <thead>
+                                        <tr>
+                                            <th>Nama</th>
+                                            <th>User ID</th>
+                                            <th>Role</th>
+                                            <th>Dibuat</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td colspan="4" class="empty-state">Memuat data pengguna...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+
+                        <section class="admin-section" aria-labelledby="admin-enrollments-heading" id="admin-enrollments-section">
+                            <h2 id="admin-enrollments-heading">Data Pendaftaran Kursus</h2>
+                            <div class="table-responsive">
+                                <table id="admin-enrollments">
+                                    <thead>
+                                        <tr>
+                                            <th>Nama Pengguna</th>
+                                            <th>Kursus</th>
+                                            <th>Status</th>
+                                            <th>Daftar Pada</th>
+                                            <th>Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td colspan="5" class="empty-state">Memuat data pendaftaran...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p id="admin-empty-state" class="empty-state" hidden>Tidak ada pendaftaran yang sesuai dengan filter.</p>
+                        </section>
+                    </section>
                 </div>
-
-                <section class="admin-section">
-                    <h2>Data Pengguna</h2>
-                    <div class="table-responsive">
-                        <table id="admin-users">
-                            <thead>
-                                <tr>
-                                    <th>Nama</th>
-                                    <th>User ID</th>
-                                    <th>Role</th>
-                                    <th>Dibuat</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td colspan="4" class="empty-state">Memuat data pengguna...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-
-                <section class="admin-section">
-                    <h2>Data Pendaftaran Kursus</h2>
-                    <div class="table-responsive">
-                        <table id="admin-enrollments">
-                            <thead>
-                                <tr>
-                                    <th>Nama Pengguna</th>
-                                    <th>Kursus</th>
-                                    <th>Status</th>
-                                    <th>Daftar Pada</th>
-                                    <th>Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td colspan="5" class="empty-state">Memuat data pendaftaran...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <p id="admin-empty-state" class="empty-state" hidden>Tidak ada pendaftaran yang sesuai dengan filter.</p>
-                </section>
-            </section>
+            </div>
         </div>
     </main>
 
